@@ -1,0 +1,47 @@
+[project]
+name = "just-enough-ai"
+version = "0.1.0"
+description = "Memory-aware, hardware-headroom cost-tiered agentic coding harness routing across NVIDIA Nemotron tiers on Nebius Token Factory."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Anish P", email = "author@example.com" }
+]
+keywords = ["nvidia", "nemotron", "nebius", "agentic-coding", "llm-routing", "hardware-headroom", "devmind"]
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.1",
+    "nvidia-ml-py>=12.560.30",
+    "openai>=1.30.0",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+jeai = "just_enough_ai.cli:app"
+just-enough-ai = "just_enough_ai.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
