@@ -28,7 +28,7 @@ To ensure maximum velocity and zero architectural bottlenecks, tasks are strictl
 |---|---|---|---|
 | **Lead (You)** | **The Brain & Systems Architect** | Overall architecture, routing matrix, agent execution loop, Nebius OpenAI runner, devmind memory bridge, and backend API. | `router/`, `agent/`, `bridge/`, `profiler/`, `models.py`, `config.py`, FastAPI backend |
 | **Mayank** | **The Sentinel (Cybersec Lead)** | Execution safety, adversarial fuzzing, process sandbox, AST invariant validation, and token/credential security. | Adversarial fuzzer (TG 3), subprocess execution sandbox, AST security linter, secret leak prevention |
-| **Manjiri** | **The Interface (UI/UX Lead)** | Mobile-first responsive web cockpit, repository file viewer, streaming diff visualizer, CLI polish. *(Desktop packaging kept at the end).* | Mobile web app (Vite + CSS/Tailwind + SSE streaming), Rich CLI, diff viewer, cost widget |
+| **Manjiri** | **The Interface (UI/UX & Client Integration Lead)** | Mobile-first responsive web cockpit, client-side backend integration (SSE streaming & REST API client layer), repository file viewer, streaming diff visualizer, CLI polish. | Mobile web app (Vite + CSS/Tailwind + SSE streaming), API client integration, Rich CLI, diff viewer, cost widget |
 | **Data Teammate** | **The Evaluator (Data & Evals Lead)** | Benchmark datasets, cost savings data analysis, test prompt curation, fuzzing test cases, Switchyard comparison tables. | 50–100 task benchmark suite, CSV/JSON cost tracking data, edge-case corpus, eval charts for README |
 
 > **Leadership Note on Data Teammate:**  

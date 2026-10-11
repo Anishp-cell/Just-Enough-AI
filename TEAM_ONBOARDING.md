@@ -65,16 +65,26 @@ Commercial AI coding tools (Cursor, GitHub Copilot) cost $10–$60/month, and th
   3. **AST Security Invariant Linter (`security/linter.py`):** Scan generated diffs to block hardcoded credentials, banned `eval()` calls, or dangerous imports.
   4. **Credential Isolation:** Ensure API keys and `.env` secrets are never leaked into logs or telemetry.
 
-### 🎨 Manjiri — The Interface (UI/UX Lead)
-* **Your Mission:** Build the user-facing interfaces, especially the mobile experience that proves our "Laptop-OFF" capability.
+### 🎨 Manjiri — The Interface & Client Integration Lead (UI/UX + Client-Side Backend Integration)
+* **Your Mission:** Build the complete user-facing interfaces and own the client-side backend integration layer that powers our "Laptop-OFF" mobile coding experience.
 * **Key Tasks:**
   1. **Mobile-First Responsive Web Cockpit:** Build a modern, clean web interface (Vite/Tailwind or lightweight HTML/CSS) that works smoothly on mobile phone browsers:
      - Live Model Status Badge (active Nemotron tier + real-time cost meter).
      - Task input box with one-tap quick prompts.
-     - Real-time streaming output pane (powered by Server-Sent Events / SSE from the backend).
-  2. **Mobile Repo Explorer & Diff Viewer:** Allow users to browse repository files on their phone and review side-by-side or unified green/red diffs before approving commits.
-  3. **CLI Polish (`cli.py`):** Add `--tier nano|super|ultra` override flags and Rich animated spinners.
-  4. *(Desktop packaging via Electron is scheduled for the final phase).*
+     - Real-time streaming output pane.
+  2. **Client-Side Backend Integration Layer:** 
+     - Connect frontend components to the FastAPI server (`http://localhost:8000` / local network IP).
+     - Consume Server-Sent Events (`POST /api/run` SSE stream) using `fetch` + `ReadableStream` or `EventSource`.
+     - Parse incoming streaming protocol chunks: `[ROUTING]` metadata, incremental token text, `[METADATA]` telemetry, and `[DONE]` sentinel.
+     - Bind telemetry (`actual_cost_usd`, `savings_vs_ultra_usd`, `tokens`) to real-time animated UI counters.
+     - Manage client-side error handling, network reconnects, and connection states.
+  3. **Mobile Repo Explorer & Diff Viewer:** Allow users to browse repository files on their phone (`GET /api/files`) and review side-by-side or unified green/red diffs before approving commits.
+  4. **CLI Polish (`cli.py`):** Add `--tier nano|super|ultra` override flags and Rich animated spinners.
+  5. *(Desktop packaging via Electron is scheduled for the final phase).*
+
+> **Architectural Boundary Note:**  
+> • **Lead owns:** The Python backend server (`server.py`, `runner.py`, `engine.py`, Pydantic models, Nebius API calls).  
+> • **Manjiri owns:** The UI and client-side integration (fetching the endpoints, consuming SSE streams, managing UI state, rendering diffs). If Manjiri needs new fields, the Lead updates the API schema.
 
 ### 📊 Data Teammate — The Evaluator (Data & Benchmarks Lead)
 * **Your Mission:** Deliver the empirical data, evaluation suites, and cost comparison proof that convinces the hackathon judges.
