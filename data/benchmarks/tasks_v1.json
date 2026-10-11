@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "description": "Initial benchmark evaluation suite for Just-Enough-AI routing precision.",
+  "tasks": [
+    {
+      "id": "easy_001",
+      "prompt": "Add a docstring to: def add(a: int, b: int) -> int: return a + b",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "docstring",
+      "description": "Small self-contained function edit"
+    },
+    {
+      "id": "easy_002",
+      "prompt": "Fix syntax error: print('hello world'",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "syntax_fix",
+      "description": "One-line syntax correction"
+    },
+    {
+      "id": "easy_003",
+      "prompt": "Write a pure function that reverses a list of strings",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "utility",
+      "description": "Trivial standalone helper"
+    },
+    {
+      "id": "medium_001",
+      "prompt": "Refactor the authentication handler to support JWT Bearer token parsing with custom expiry validation and comprehensive unit tests.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "refactor",
+      "description": "Multi-function logic update with edge conditions"
+    },
+    {
+      "id": "medium_002",
+      "prompt": "Add an asynchronous retry decorator with exponential backoff and jitter for network requests.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "feature",
+      "description": "Async decorator pattern implementation"
+    },
+    {
+      "id": "hard_001",
+      "prompt": "Architect and implement a two-phase commit distributed transaction coordinator with WAL persistence, lease recovery, and Byzantine fault detection across replicated worker nodes.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "architecture",
+      "description": "Deep frontier reasoning across distributed systems theory"
+    },
+    {
+      "id": "hard_002",
+      "prompt": "Redesign entire database persistence layer to support dual-write sharding across PostgreSQL and ClickHouse with zero downtime migration.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "distributed_persistence",
+      "description": "High-complexity ungrounded architectural design"
+    }
+  ]
+}

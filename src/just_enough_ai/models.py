@@ -1,7 +1,7 @@
 """Data models and schemas for Just-Enough-AI."""
 
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -10,6 +10,12 @@ class ModelTier(str, Enum):
     NANO = "nano"
     SUPER = "super"
     ULTRA = "ultra"
+
+
+class ExecutionMode(str, Enum):
+    """Whether routing uses local hardware headroom or cloud-only mode."""
+    LOCAL = "local"          # GPU VRAM is factored into routing
+    REMOTE_CLOUD = "remote"  # No local GPU; routing uses only memory confidence
 
 
 class HardwareHeadroom(BaseModel):
@@ -39,3 +45,18 @@ class RoutingDecision(BaseModel):
     estimated_cost_per_1m_tokens: float
     hardware_headroom: HardwareHeadroom
     memory_context: MemoryContext
+    execution_mode: ExecutionMode = ExecutionMode.LOCAL
+    force_tier: Optional[ModelTier] = None
+
+
+class RunMetadata(BaseModel):
+    """Actual telemetry captured after a completed Nebius inference call."""
+    model_id: str
+    tier: ModelTier
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    actual_cost_usd: float = 0.0
+    savings_vs_ultra_usd: float = 0.0
+    latency_ms: float = 0.0
+    execution_mode: ExecutionMode = ExecutionMode.LOCAL
