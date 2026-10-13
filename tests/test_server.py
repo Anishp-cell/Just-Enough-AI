@@ -55,3 +55,33 @@ def test_api_run_sse_stream():
     assert "data: [ROUTING]" in body
     assert "data: [METADATA]" in body
     assert "data: [DONE]" in body
+
+
+def test_api_speculative_endpoint():
+    res = client.post("/api/speculative", json={"task": "Add currency formatting helper", "fallback_tier": "super"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "status" in data
+    assert "final_tier" in data
+    assert "gate_report" in data
+    assert "total_cost_usd" in data
+
+
+def test_api_kv_budget_endpoint():
+    res = client.get("/api/kv-budget?tokens=5000&tier=nano")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["active_tokens"] == 5000
+    assert "kv_cache_used_mb" in data
+    assert "governor_action" in data
+
+
+def test_api_loop_sse_stream():
+    res = client.post("/api/loop", json={"task": "Refactor timestamp helper", "mode": "remote"})
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    body = res.text
+    assert "data: [EVENT]" in body
+    assert "data: [METADATA]" in body
+    assert "data: [DONE]" in body
+

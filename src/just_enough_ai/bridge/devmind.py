@@ -77,7 +77,12 @@ def _scan_local_codebase(query: str, repo_dir: str = ".") -> Tuple[float, List[s
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     fn_name_lower = node.name.lower()
-                    if any(k in fn_name_lower or fn_name_lower in k for k in keywords_lower):
+                    fn_tokens = set(fn_name_lower.split("_"))
+                    matched = any(
+                        (k == fn_name_lower) or (k in fn_tokens) or (len(k) >= 5 and k in fn_name_lower)
+                        for k in keywords_lower
+                    )
+                    if matched:
                         end_line = getattr(node, "end_lineno", node.lineno + 5)
                         snippet_lines = lines[node.lineno - 1 : min(end_line, node.lineno + 12)]
                         snippet = "\n".join(snippet_lines)
@@ -86,7 +91,12 @@ def _scan_local_codebase(query: str, repo_dir: str = ".") -> Tuple[float, List[s
 
                 elif isinstance(node, ast.ClassDef):
                     class_name_lower = node.name.lower()
-                    if any(k in class_name_lower or class_name_lower in k for k in keywords_lower):
+                    class_tokens = set(re.findall(r"[a-z0-9]+", class_name_lower))
+                    matched = any(
+                        (k == class_name_lower) or (k in class_tokens) or (len(k) >= 5 and k in class_name_lower)
+                        for k in keywords_lower
+                    )
+                    if matched:
                         end_line = getattr(node, "end_lineno", node.lineno + 5)
                         snippet_lines = lines[node.lineno - 1 : min(end_line, node.lineno + 10)]
                         snippet = "\n".join(snippet_lines)

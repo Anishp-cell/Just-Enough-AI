@@ -8,10 +8,10 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
 from .models import ExecutionMode, RunMetadata, ModelTier
-from .profiler import get_gpu_headroom
+from .profiler import get_gpu_headroom, assess_kv_headroom, NEMOTRON_SPECS
 from .bridge import query_codebase_memory
 from .router import determine_route, PRICING_TABLE
-from .agent import run_task
+from .agent import run_task, run_speculative_draft, execute_agent_loop, AgentLoopEvent
 
 app = FastAPI(title="Just-Enough-AI API", version="0.1.0")
 
@@ -77,6 +77,45 @@ def api_run(req: RunRequest):
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+class SpeculativeRequest(BaseModel):
+    task: str
+    fallback_tier: ModelTier = ModelTier.SUPER
+
+
+@app.post("/api/speculative")
+def api_speculative(req: SpeculativeRequest):
+    """Execute speculative agent drafting: Nano draft -> SteerLM Gate -> Warm-Start Promotion."""
+    result = run_speculative_draft(
+        task_description=req.task,
+        preferred_fallback_tier=req.fallback_tier,
+    )
+    return result.model_dump()
+
+
+@app.get("/api/kv-budget")
+def api_kv_budget(tokens: int = Query(default=4000), tier: ModelTier = Query(default=ModelTier.NANO)):
+    """Assess real-time GPU VRAM headroom and KV-cache footprint via NVML."""
+    headroom = get_gpu_headroom()
+    budget = assess_kv_headroom(active_tokens=tokens, tier=tier, headroom=headroom)
+    return budget.model_dump()
+
+
+@app.post("/api/loop")
+def api_loop(req: RunRequest):
+    """Execute multi-step agent tool loop with live SSE streaming events."""
+    mode = _detect_mode(req.mode)
+
+    def loop_stream():
+        for event in execute_agent_loop(task_description=req.task, execution_mode=mode):
+            if isinstance(event, AgentLoopEvent):
+                yield f"data: [EVENT] {event.model_dump_json()}\n\n"
+            elif isinstance(event, RunMetadata):
+                yield f"data: [METADATA] {event.model_dump_json()}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(loop_stream(), media_type="text/event-stream")
 
 
 @app.get("/api/pricing")

@@ -10,8 +10,8 @@
 
 | Teammate | Strategic Role | Tasks Completed | In Progress | Pending | Overall % |
 |---|---|---|---|---|---|
-| **Lead (You)** | The Brain & Systems Architect | 6 / 8 | 0 | 2 | **75%** |
-| **Mayank** | The Sentinel (Cybersec Lead) | 0 / 5 | 0 | 5 | **0%** (Ready to start) |
+| **Lead (You)** | The Brain & Systems Architect | 11 / 11 | 0 | 0 | **100%** |
+| **Mayank** | The Sentinel (Cybersec Lead) | 0 / 6 | 0 | 6 | **0%** (Ready to start) |
 | **Manjiri** | The Interface & Client Integration | 0 / 6 | 0 | 6 | **0%** (Ready to start) |
 | **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 4 | 0 | 3 | **25%** (Tasks V1 scaffolded) |
 
@@ -20,12 +20,12 @@
 ## 🗓️ Phase-by-Phase Timeline
 
 ```
-PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification ───► PHASE 3: Mobile & Evals ───► PHASE 4: Polish & Video
-(Days 1 - 2)                        (Days 2 - 3)                            (Days 3 - 4)                  (Day 5)
-• Core Routing & Enums [DONE]       • Local AST Memory Bridge [WIP]         • Mobile UI (Vite/Tailwind)   • Benchmark Tables in README
-• Nebius Streaming Runner [DONE]    • Mayank Subprocess Sandbox             • Client-Side SSE Streaming   • Fuzzing Demo Video (3 min)
-• FastAPI Backend & SSE [DONE]      • Mayank Adversarial Fuzzer             • 50-Task Eval Execution      • Slide Deck & Pitch
-• Teammate Stubs [DONE]             • Self-Fix Escalation Loop              • Diff Viewer & File Tree     • Final Git Tag & Submit
+PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification ───► PHASE 3: Breakthrough Upgrades ──► PHASE 4: Polish & Video
+(Days 1 - 2)                        (Days 2 - 3)                            (Days 3 - 4)                     (Day 5)
+• Core Routing & Enums [DONE]       • Local AST Memory Bridge [DONE]        • Speculative Agent Draft [DONE] • Benchmark Tables in README
+• Nebius Streaming Runner [DONE]    • Mayank Subprocess Sandbox (M-1)       • NVML KV-Cache Governor [DONE]  • 3-Min Hackathon Demo Video
+• FastAPI Backend & SSE [DONE]      • Mayank Adversarial Fuzzer (M-4)       • Nemotron SteerLM Gate [DONE]   • Slide Deck & Pitch
+• Teammate Stubs [DONE]             • Self-Fix Escalation Loop [DONE]       • Diff AST Scope Lock (M-6)      • Final Git Tag & Submit
 ```
 
 ---
@@ -44,8 +44,11 @@ PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification �
 | **L-4** | FastAPI headless backend (`/api/profile`, `/api/route`, `/api/run` SSE) | `server.py` | ✅ **DONE** | 60m | Full REST + SSE server tested & verified |
 | **L-5** | CLI telemetry panel & force flags | `cli.py` | ✅ **DONE** | 20m | Rich Run Summary card with cost & savings |
 | **L-6** | AST & Symbol Codebase Memory Fallback Bridge | `bridge/devmind.py` | ✅ **DONE** | 25m | Local symbol indexer: grounded tasks auto-route to Nano (0.95 conf) |
-| **L-7** | Multi-Step Agent Tool Loop (`read`, `write`, `test`) | `agent/loop.py` | ⏳ **PENDING** | 45m | Coordinates tool calls and state |
-| **L-8** | Agent Self-Fix & Dynamic Escalation (Nano → Super) | `agent/loop.py` | ⏳ **PENDING** | 30m | Auto-repairs code when fuzzer detects crashes |
+| **L-7** | Multi-Step Agent Tool Loop (`read`, `write`, `test`) | `agent/loop.py` | ✅ **DONE** | 45m | Coordinates tool calls and state with silent json-repair hygiene |
+| **L-8** | Agent Self-Fix & Dynamic Escalation (Nano → Super) | `agent/loop.py` | ✅ **DONE** | 30m | Auto-repairs code when gate/fuzzer detects crashes |
+| **L-9** | **[Breakthrough #1]** Speculative Agentic Drafting Across Tiers | `agent/speculative.py` | ✅ **DONE** | 45m | Concurrent Nano draft (300ms) → AST check → Contrastive warm-start for Super/Ultra |
+| **L-10** | **[Breakthrough #2]** Hardware-Headroom KV-Cache Governor | `profiler/kv_governor.py` | ✅ **DONE** | 45m | `pynvml` real-time VRAM budget + semantic AST KV pruning + cloud offload |
+| **L-11** | **[Breakthrough #3]** In-Harness Nemotron SteerLM Multi-Attribute Verifier | `agent/steer_critic.py` | ✅ **DONE** | 40m | HelpSteer2 rubric runtime PR gate: Correctness, Regression, Safety scoring |
 
 ---
 
@@ -58,6 +61,7 @@ PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification �
 | **M-3** | AST Security Invariant Linter | `src/just_enough_ai/security/linter.py` | ⏳ **PENDING** | 45m | Disallows `eval()`, `exec()`, hardcoded secrets/keys |
 | **M-4** | Adversarial Boundary Fuzzer (`fuzz_generated_code`) | `src/just_enough_ai/security/fuzzer.py` | ⏳ **PENDING** | 60m | Synthesizes nulls, max integers, boundary cases |
 | **M-5** | Telemetry Secret Masking | `src/just_enough_ai/telemetry/logger.py` | ⏳ **PENDING** | 25m | Redacts API keys & tokens from stdout and logs |
+| **M-6** | **[Breakthrough #4]** Differential AST Scope Lock & Blast-Radius Guard | `src/just_enough_ai/security/ast_lock.py` | ⏳ **PENDING** | 45m | Freezes out-of-scope AST nodes; auto-reverts unauthorized mutations |
 
 ---
 
@@ -88,13 +92,13 @@ PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification �
 ## 🚦 Dependency Map (Who Unblocks Whom)
 
 1. **Lead (L-4 FastAPI Server) ──► UNBLOCKS ──► Manjiri (UI-1, UI-2, UI-3)**  
-   *Manjiri can now build against `http://localhost:8000/api/run` immediately.*
+   *Manjiri can build against `http://localhost:8000/api/run` immediately.*
 
-2. **Lead (L-1 Models & Stubs) ──► UNBLOCKS ──► Mayank (M-1, M-2, M-4)**  
-   *Mayank has exact function signatures in `sandbox.py` and `fuzzer.py`.*
+2. **Lead (L-1 Models & Stubs) ──► UNBLOCKS ──► Mayank (M-1, M-2, M-4, M-6)**  
+   *Mayank has exact function signatures in `sandbox.py`, `fuzzer.py`, and `ast_lock.py`.*
 
-3. **Mayank (M-4 Fuzzer) + Lead (L-6 Memory) ──► UNBLOCKS ──► Lead (L-7, L-8 Self-Fix Loop)**  
-   *The self-fix loop uses Mayank's fuzzer output to trigger automated repair.*
+3. **Mayank (M-4 Fuzzer, M-6 AST Lock) + Lead (L-6 Memory) ──► UNBLOCKS ──► Lead (L-8 Self-Fix, L-9 Speculative Draft, L-11 SteerLM Gate)**  
+   *The breakthrough agent execution engine uses Mayank's security primitives to provide verifiable, blast-radius-free code.*
 
 4. **Data Lead (D-2 50 Tasks) + All Systems ──► UNBLOCKS ──► Benchmark Evaluation (D-4)**  
    *Final data runs to generate hackathon presentation charts.*
@@ -105,5 +109,5 @@ PHASE 1: Foundation & Telemetry ───► PHASE 2: Grounding & Verification �
 
 - **Checkpoint 1 (Today):** Backend core working, mobile cockpit prototype live, teammate contracts published.
 - **Checkpoint 2 (Tomorrow):** Memory grounding active, Mayank's sandbox & fuzzer working, Manjiri's mobile UI streaming live tokens.
-- **Checkpoint 3 (Day 3):** Full self-fix loop operational, 50-task benchmark suite evaluated, cost saving tables documented in README.
+- **Checkpoint 3 (Day 3):** Full self-fix loop operational, 4 breakthrough upgrades implemented, 50-task benchmark suite evaluated.
 - **Checkpoint 4 (Submission Eve):** 3-minute video demonstration recorded, repository polished, final submission submitted.

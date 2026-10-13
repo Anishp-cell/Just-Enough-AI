@@ -1,8 +1,19 @@
 """Mock inference runner for offline testing without burning Nebius credits."""
 
 from typing import Generator, Union
-from ..models import RoutingDecision, RunMetadata
+from ..models import RoutingDecision, RunMetadata, ModelTier
 from ..router.cost import calculate_cost, calculate_savings_vs_ultra
+
+
+def get_mock_completion(task_description: str, tier: ModelTier = ModelTier.NANO) -> str:
+    """Generate a deterministic mock Python code completion for offline testing."""
+    clean_task = task_description.replace('"', '\\"')
+    return (
+        f'"""Auto-generated implementation for task: {clean_task}."""\n\n'
+        f"def solution():\n"
+        f"    # Solved using Nemotron {tier.value.upper()} tier\n"
+        f"    return True\n"
+    )
 
 
 def run_mock_task(
