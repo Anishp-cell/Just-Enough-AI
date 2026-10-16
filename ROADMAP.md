@@ -37,6 +37,24 @@ While other frameworks rely on standard JSON error catches and basic retries, Ju
 4. **Differential AST Scope Lock (`security/ast_lock.py`):**  
    Enforces compiler-grade blast-radius containment. Derives the symbol dependency closure via `devmind` and locks all out-of-scope code as immutable. Diffs AST nodes before and after generation, surgically rolling back any unauthorized mutations to adjacent functions.
 
+5. **Universal Meta-Harness & Multi-Provider Adapter Bridge (`providers/`):**  
+   Turns installed free-tier agentic environments (Google Antigravity `agy`, Claude Code CLI, OpenCode, Codex, and local Ollama) into swappable, headless inference backends alongside direct NVIDIA NIM / Nebius Token Factory APIs. Features an automated zero-cost cascading failover waterfall: tries free local/installed backends first, and elastically cascades to cloud Nemotron only when local headroom or free quotas expire.
+
+---
+
+### C. The Universal Meta-Harness: Zero-Subscription Access Democratization
+> **The Problem with "Frontier-Only" Agents:**  
+> Most modern coding harnesses demand $20–$100/month in OpenAI, Anthropic, or cloud API tokens. Developers, students, and open-source contributors without paid API keys are locked out. Simultaneously, developers already have agentic IDEs installed on their machines (Google Antigravity, Claude Code, OpenCode, Ollama) which provide generous free tiers or local inference—but these tools operate in closed client silos and do not expose raw API keys for custom workflows.
+
+**How Just-Enough-AI Solves This:**
+1. **Unified Provider Abstraction (`ProviderAdapter`):** Normalizes model execution across direct REST APIs, local HTTP engines (Ollama on localhost:11434), and headless CLI process execution (`agy`, `claude`, `opencode`).
+2. **Zero-Cost Waterfall Router:** Evaluates tasks through a three-tier cost cascade:
+   - **Tier 0 (Free Local):** Ollama running local Nemotron-Nano / Qwen / Llama weights with hardware NVML governance.
+   - **Tier 1 (Free Agentic IDEs):** Headless execution through installed tools (Antigravity CLI, Claude Code CLI, OpenCode) with automatic ANSI sanitization and permission handling.
+   - **Tier 2 (Cloud Fallback):** Nebius Token Factory / NVIDIA NIM running Nemotron Nano ($0.15/1M), Super ($0.375/1M), or Ultra ($1.80/1M).
+3. **Cascading Failover on Rate Limits:** If a free-tier provider triggers a rate-limit (HTTP 429 or quota exhaustion), the harness instantly waterfalls to the next best provider without halting or failing the developer's multi-step task.
+4. **`jeai setup` Auto-Detection Wizard:** Scans the developer's machine on first boot (`which agy`, `which claude`, `which ollama`, etc.), automatically registers detected tools, and benchmarks their availability in under 5 seconds.
+
 ---
 
 ## 2. Team Division & Ownership (4 Members)
@@ -45,10 +63,10 @@ To ensure maximum velocity and zero architectural bottlenecks, tasks are strictl
 
 | Member | Strategic Role | Primary Responsibility | Critical Deliverables |
 |---|---|---|---|
-| **Lead (You)** | **The Brain & Systems Architect** | Overall architecture, routing matrix, agent execution loop, Nebius runner, devmind memory bridge, speculative drafting, KV governor, and backend API. | `router/`, `agent/`, `bridge/`, `profiler/`, `models.py`, `config.py`, FastAPI backend |
-| **Mayank** | **The Sentinel (Cybersec Lead)** | Execution safety, adversarial fuzzing, process sandbox, AST scope lock, security invariants, and token/credential security. | Adversarial fuzzer (TG 3), subprocess sandbox, AST security linter, AST scope lock (`ast_lock.py`), secret masking |
-| **Manjiri** | **The Interface (UI/UX & Client Integration Lead)** | Mobile-first responsive web cockpit, client-side backend integration (SSE streaming & REST API client layer), repository file viewer, streaming diff visualizer, CLI polish. | Mobile web app (Vite + CSS/Tailwind + SSE streaming), API client integration, Rich CLI, diff viewer, cost widget |
-| **Data Teammate** | **The Evaluator (Data & Evals Lead)** | Benchmark datasets, cost savings data analysis, test prompt curation, fuzzing test cases, Switchyard comparison tables. | 50–100 task benchmark suite, CSV/JSON cost tracking data, edge-case corpus, eval charts for README |
+| **Lead (You)** | **The Brain & Systems Architect** | Overall architecture, routing matrix, agent execution loop, Nebius runner, devmind memory bridge, speculative drafting, KV governor, **Universal Provider Adapters** (Ollama, Antigravity, Claude Code), **Cascading Failover Engine**, and backend API. | `router/`, `agent/`, `bridge/`, `profiler/`, `providers/` (`base.py`, `nebius.py`, `antigravity.py`, `claude_code.py`, `ollama.py`, `cascade.py`), `models.py`, `config.py`, FastAPI backend |
+| **Mayank** | **The Sentinel (Cybersec Lead)** | Execution safety, adversarial fuzzing, process sandbox, AST scope lock, security invariants, **provider CLI sandbox isolation**, **ANSI terminal sanitization**, and credential protection. | Adversarial fuzzer (TG 3), subprocess sandbox, AST security linter, AST scope lock (`ast_lock.py`), secret masking, provider CLI sandbox (`security/cli_sandbox.py`) |
+| **Manjiri** | **The Interface (UI/UX & Client Integration Lead)** | Mobile-first responsive web cockpit, client-side backend integration (SSE streaming & REST API client layer), repository file viewer, streaming diff visualizer, CLI polish, **`jeai setup` auto-detection wizard**, and **Provider Status HUD**. | Mobile web app (Vite + CSS/Tailwind + SSE streaming), API client integration, Rich CLI, diff viewer, cost widget, `jeai setup` wizard, Web Cockpit Provider HUD |
+| **Data Teammate** | **The Evaluator (Data & Evals Lead)** | Benchmark datasets, cost savings data analysis, test prompt curation, fuzzing test cases, **multi-provider latency & failover resilience benchmarks**, Switchyard comparison tables. | 50–100 task benchmark suite, CSV/JSON cost tracking data, edge-case corpus, eval charts for README, multi-provider benchmark report |
 
 ---
 
@@ -73,11 +91,20 @@ src/just_enough_ai/
 │   ├── gpu.py             ← NVIDIA GPU VRAM detection via pynvml (Lead)
 │   ├── kv_governor.py     ← [Breakthrough #2] Real-time KV-Cache Headroom & Tree Pruner (Lead)
 │   └── system.py          ← System RAM & environment profiler (Lead)
+├── providers/             ← [Breakthrough #5] Universal Meta-Harness & Multi-Provider Bridge
+│   ├── base.py            ← Abstract ProviderAdapter interface (Lead)
+│   ├── registry.py        ← Provider registry & auto-discovery (Lead)
+│   ├── nebius.py          ← NebiusDirectAdapter (NVIDIA Nemotron via API) (Lead)
+│   ├── antigravity.py     ← AntigravityCliAdapter (agy CLI bridge) (Lead)
+│   ├── claude_code.py     ← ClaudeCodePtyAdapter (Claude Code CLI bridge) (Lead)
+│   ├── ollama.py          ← OllamaLocalAdapter (Local Ollama HTTP bridge) (Lead)
+│   └── cascade.py         ← Zero-Cost Cascading Failover Router (Lead)
 ├── router/
 │   ├── engine.py          ← 3-tier routing matrix (Local VRAM vs Remote Cloud) (Lead)
 │   └── cost.py            ← Nebius Token Factory pricing tiers & savings math (Lead + Data)
 ├── security/
 │   ├── ast_lock.py        ← [Breakthrough #4] Differential AST Scope Lock (Mayank + Lead)
+│   ├── cli_sandbox.py     ← Provider CLI sandbox isolation & ANSI sanitizer (Mayank)
 │   ├── fuzzer.py          ← Adversarial test synthesis & contract verification (Mayank)
 │   └── linter.py          ← AST security invariants & credential leak scanner (Mayank)
 └── telemetry/
@@ -129,6 +156,19 @@ data/                      ← Managed by Data Teammate
 | **Mayank** | **Repository Path Validator**: Ensure file queries from the mobile interface or devmind bridge cannot access parent paths (`../`). |
 | **Manjiri** | **Mobile Code Viewer**: Add a collapsible mobile file-tree explorer to the web cockpit. |
 | **Data Lead** | **Grounding Evaluation**: Measure how confidence score shifts model routing from Ultra → Super → Nano. |
+
+---
+
+### TG 2.5 — Universal Meta-Harness & Multi-Provider Adapters (Zero-Cost Tier)
+
+**Goal:** Turn installed free-tier agentic IDEs and local engines into unified, swappable inference backends with automatic cascading failover.
+
+| Member | Specific Tasks |
+|---|---|
+| **Lead** | **Universal Provider Engine (`providers/`)**:<br>1. Define `ProviderAdapter` ABC (`base.py`, `registry.py`).<br>2. Build `NebiusDirectAdapter` (existing direct API) & `OllamaLocalAdapter` (local HTTP localhost:11434).<br>3. Build `AntigravityCliAdapter` (headless `agy` runner & artifact parser).<br>4. Build `ClaudeCodePtyAdapter` (PTY subprocess, `--dangerously-skip-permissions` automation).<br>5. Implement `CascadingFailoverRouter` (`providers/cascade.py`): on rate-limit 429/quota exhaustion, waterfall from Tier 0 (Ollama) → Tier 1 (Antigravity/Claude Code) → Tier 2 (Nebius Cloud). |
+| **Mayank** | **Provider Process Sandbox & ANSI Stripper (`security/cli_sandbox.py`)**:<br>1. Execute spawned CLI adapters in sandboxed subprocess environments with isolated working directories.<br>2. Sanitize ANSI color escape codes and terminal cursor sequences from raw CLI outputs.<br>3. Prevent session token / environment credential bleeding across disparate CLI tools. |
+| **Manjiri** | **`jeai setup` Wizard & Provider HUD (`cli.py`, `server.py`)**:<br>1. Implement interactive `jeai setup` CLI auto-detecting installed tools (`agy`, `claude`, `opencode`, `ollama`).<br>2. Add Provider Status Widget in Web Cockpit showing live status: `🟢 Antigravity (Free)`, `🟢 Claude Code (Free)`, `🟡 Ollama (Local)`, `🔵 Nebius (Cloud Fallback)`. |
+| **Data Lead** | **Multi-Provider Latency & Resilience Benchmark (`data/results/providers.md`)**:<br>1. Benchmark prompt latency across Direct API vs CLI subprocesses.<br>2. Simulate rate-limit triggers (mock 429) to verify seamless zero-loss task cascade. |
 
 ---
 
@@ -211,6 +251,7 @@ graph TD
     TG1_Data["TG 1: 25-Task Benchmark Dataset<br/>(Data Lead) [DONE]"]
     
     TG2["TG 2: devmind Grounding & AST Indexer<br/>(Lead + Manjiri)"]
+    TG2_5["TG 2.5: Universal Meta-Harness & Adapters<br/>(Lead + Mayank + Manjiri)"]
     
     TG3["TG 3: Speculative Drafting & HelpSteer2 Gate ⭐<br/>(Lead + Mayank)"]
     
@@ -229,18 +270,22 @@ graph TD
     
     TG1_Lead --> TG2
     TG1_Manjiri --> TG2
+    TG2 --> TG2_5
+    TG1_Mayank --> TG2_5
+    TG2_5 --> TG3
     TG1_Mayank --> TG3
-    TG2 --> TG3
     
     TG3 --> TG4
     TG4 --> TG5
     TG1_Data --> TG6
+    TG2_5 --> TG6
     TG3 --> TG6
     TG5 --> TG6
     
     TG5 --> TG7
     TG6 --> TG7
 
+    style TG2_5 fill:#2c3e50,stroke:#e67e22,stroke-width:2px
     style TG3 fill:#1b4d3e,stroke:#2ecc71,stroke-width:3px
     style TG4 fill:#1c3d5a,stroke:#3490dc,stroke-width:2px
     style TG7 fill:#3d2c4d,stroke:#9b59b6,stroke-width:2px
@@ -255,4 +300,5 @@ graph TD
 - [x] **Track Fit:** Directly addresses *Coding and Agentic Engineering* track.
 - [x] **Hardware Grounding:** Uses NVIDIA Management Library (`pynvml`) for physical VRAM and KV-Cache headroom telemetry.
 - [x] **NVIDIA Alignment Integration:** Leverages NVIDIA's HelpSteer2 / SteerLM multi-attribute rubric as a runtime PR gate.
+- [x] **Zero-Cost Access Democratization:** Functions out-of-the-box with zero paid API keys by orchestrating local Ollama and installed developer IDE free-tiers with seamless cloud escalation.
 - [x] **Open Infrastructure:** Zero dependency on closed proprietary big-tech agent clouds.

@@ -11,16 +11,16 @@
 
 | Teammate | Strategic Role | Tasks Completed | In Progress | Pending | Overall % | Current Status |
 |---|---|:---:|:---:|:---:|:---:|---|
-| **Lead (You)** | The Brain & Systems Architect | 11 / 11 | 0 | 0 | **100%** | 🟢 Core architecture, router, KV governor, SteerLM gate, & speculative loop live |
-| **Mayank** | The Sentinel (Cybersecurity Lead) | 0 / 6 | 0 | 6 | **0%** | 🟡 Ready to start (Stubs & contracts published in `agent/sandbox.py`, `security/`) |
-| **Manjiri** | The Interface & Client Integration | 0 / 6 | 0 | 6 | **0%** | 🟡 Ready to start (FastAPI REST + SSE endpoints live at `http://localhost:8000`) |
-| **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 4 | 0 | 3 | **25%** | 🟡 Ready to expand `tasks_v1.json` to 50 tasks and run cost benchmarking |
+| **Lead (You)** | The Brain & Systems Architect | 11 / 16 | 0 | 5 | **69%** | 🟢 Phase 1 Live; Phase 2 (Universal Meta-Harness & Adapters) assigned (`L-12` to `L-16`) |
+| **Mayank** | The Sentinel (Cybersecurity Lead) | 0 / 7 | 0 | 7 | **0%** | 🟡 Ready to start (`M-1` to `M-7` including CLI sandbox & ANSI sanitizer) |
+| **Manjiri** | The Interface & Client Integration | 0 / 8 | 0 | 8 | **0%** | 🟡 Ready to start (`UI-1` to `UI-8` including `jeai setup` & Provider HUD) |
+| **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 5 | 0 | 4 | **20%** | 🟡 Ready to execute (`D-2` to `D-5` including multi-provider benchmarks) |
 
 ---
 
 ## 🔄 End-to-End System Flowchart
 
-The following diagram illustrates how all four teammates' modules interact during an end-to-end user request:
+The following diagram illustrates how all four teammates' modules interact during an end-to-end user request, including zero-cost multi-provider cascading failover:
 
 ```mermaid
 sequenceDiagram
@@ -30,11 +30,12 @@ sequenceDiagram
     participant Server as FastAPI Server (/api/run, /api/loop)
     participant Router as Lead (Router & Memory Bridge)
     participant KV as Lead (KV-Cache Governor NVML)
-    participant Spec as Lead (Speculative Drafting)
-    participant Sandbox as Mayank (Subprocess Sandbox)
+    participant Cascade as Lead (Cascading Provider Router)
+    participant LocalProv as Lead (Ollama / Antigravity / Claude)
+    participant Nebius as Nebius Token Factory (Nemotron)
     participant ASTLock as Mayank (AST Scope Lock)
     participant Critic as Lead (Nemotron SteerLM Gate)
-    participant Nebius as Nebius Token Factory (Nemotron)
+    participant Sandbox as Mayank (Subprocess Sandbox)
 
     User->>UI: Types coding task on Mobile / CLI
     UI->>Server: POST /api/run or /api/loop (SSE Stream)
@@ -42,26 +43,37 @@ sequenceDiagram
     Router->>KV: assess_kv_headroom(active_tokens, tier)
     KV-->>Router: Headroom OK / Trigger Prune / Offload Cloud
     
-    Server->>Spec: run_speculative_draft(task)
-    Spec->>Nebius: Greedy draft on Nemotron Nano (300ms, $0.0001)
-    Nebius-->>Spec: Proposed code draft
+    Server->>Cascade: dispatch_task(task, target_tier)
+    alt Zero-Cost Tier 0 / Tier 1 Available (Ollama / Antigravity / Claude Code)
+        Cascade->>LocalProv: Execute via CLI / Local HTTP (Free Tier)
+        alt Success
+            LocalProv-->>Cascade: Proposed code draft ($0.00 spent)
+        else Rate Limit / Quota 429
+            LocalProv-->>Cascade: 429 RateLimitExceeded / Session Expired
+            Cascade->>Nebius: Auto-Cascade to Nebius Token Factory (Nemotron Nano)
+            Nebius-->>Cascade: Cloud code draft
+        end
+    else Cloud-Direct Mode
+        Cascade->>Nebius: Direct Nemotron Inference
+        Nebius-->>Cascade: Cloud code draft
+    end
     
-    Spec->>ASTLock: validate_ast_scope(original_code, draft)
-    ASTLock-->>Spec: In-scope verified (unauthorized edits reverted)
+    Cascade-->>Server: Raw proposed code draft
+    Server->>ASTLock: validate_ast_scope(original_code, draft)
+    ASTLock-->>Server: In-scope verified (unauthorized edits reverted)
     
-    Spec->>Critic: evaluate_code(task, draft)
+    Server->>Critic: evaluate_code(task, draft)
     alt Speculation Hit (Gate Score >= 0.75)
-        Critic-->>Spec: PASSED (Correctness, Security, Brevity)
-        Spec-->>Server: Final Solution (Nano, 350ms, $0.0001)
+        Critic-->>Server: PASSED (Correctness, Security, Brevity)
     else Speculation Miss (Gate Score < 0.75)
-        Critic-->>Spec: REJECTED with Critique Feedback
-        Spec->>Nebius: Contrastive Warm-Start to Nemotron Super/Ultra
-        Nebius-->>Spec: Refined robust code solution
+        Critic-->>Server: REJECTED with Critique Feedback
+        Server->>Nebius: Contrastive Warm-Start to Nemotron Super/Ultra
+        Nebius-->>Server: Refined robust code solution
     end
 
     Server->>Sandbox: Mayank fuzzer executes boundary checks
     Sandbox-->>Server: All boundary tests pass safely
-    Server-->>UI: Streams tokens, SteerLM badge, & exact USD saved
+    Server-->>UI: Streams tokens, active provider pill, SteerLM badge, & USD saved
     UI-->>User: Renders green/red diff & one-tap GitHub commit button
 ```
 
@@ -70,11 +82,12 @@ sequenceDiagram
 ## 🚦 Dependency Map (Who Unblocks Whom)
 
 ```
-[Lead: L-1 to L-6 Models, Router, Server] ──► COMPLETED ──► UNBLOCKS Manjiri (UI-1 to UI-5)
-[Lead: L-1 Models & Sandbox Stubs]         ──► COMPLETED ──► UNBLOCKS Mayank (M-1 to M-6)
-[Mayank: M-1 Sandbox & M-4 Fuzzer]        ──► IN PROGRESS ──► HARDENS Lead's Self-Fix Loop
-[Mayank: M-6 AST Scope Lock]              ──► IN PROGRESS ──► GUARDS Speculative Drafting
-[Data Lead: D-2 50 Tasks]                 ──► IN PROGRESS ──► FEEDS D-4 Final Benchmark Proof
+[Lead: L-1 to L-6 Models, Router, Server]       ──► COMPLETED ──► UNBLOCKS Manjiri (UI-1 to UI-6)
+[Lead: L-1 Models & Sandbox Stubs]               ──► COMPLETED ──► UNBLOCKS Mayank (M-1 to M-6)
+[Lead: L-12 to L-16 Provider Engine & Cascade]   ──► ASSIGNED  ──► UNBLOCKS Manjiri (UI-7, UI-8) & Mayank (M-7)
+[Mayank: M-7 CLI Sandbox & ANSI Stripper]        ──► ASSIGNED  ──► HARDENS Lead's CLI Adapters (L-14, L-15)
+[Manjiri: UI-7 jeai setup Wizard]               ──► ASSIGNED  ──► BOOTSTRAPS Provider Config for Developers
+[Data Lead: D-5 Multi-Provider Evals]            ──► ASSIGNED  ──► PROVES Cascading Failover Resilience
 ```
 
 ---
@@ -86,16 +99,23 @@ sequenceDiagram
 ### 🧠 Workstream 1: Lead — The Brain & Systems Architect
 **Owner:** Lead  
 **Scope:** Core router, telemetry, KV-cache governor, speculative drafting, SteerLM PR gate, and FastAPI backend.  
-**Status:** **100% Completed (All 11 Tasks Done)**
+**Status:** **11 / 16 Tasks Completed (Phase 1: 100% Complete; Phase 2 Universal Provider Engine: In Progress)**
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                                LEAD WORKFLOW                                     │
-│  models.py ──► router/engine.py ──► profiler/kv_governor.py ──► agent/speculative.py │
-│                     │                       │                         │          │
-│                     ▼                       ▼                         ▼          │
-│             bridge/devmind.py         server.py (SSE)         agent/steer_critic.py│
-└──────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                LEAD WORKFLOW                                           │
+│  models.py ──► router/engine.py ──► profiler/kv_governor.py ──► agent/speculative.py   │
+│                     │                       │                         │                │
+│                     ▼                       ▼                         ▼                │
+│             bridge/devmind.py         server.py (SSE)         agent/steer_critic.py    │
+│                     │                                                                  │
+│                     ▼                                                                  │
+│    providers/base.py ──► providers/registry.py ──► providers/cascade.py (Failover)     │
+│             ├── nebius.py (NebiusDirectAdapter - Cloud Nemotron)                       │
+│             ├── ollama.py (OllamaLocalAdapter - Local weights via localhost:11434)     │
+│             ├── antigravity.py (AntigravityCliAdapter - agy CLI bridge)                │
+│             └── claude_code.py (ClaudeCodePtyAdapter - claude CLI bridge)              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Detailed Task Breakdown:
@@ -136,24 +156,92 @@ sequenceDiagram
     $$\text{Gate Score} = 0.40 \cdot \mathcal{C} + 0.30 \cdot (1 - \mathcal{R}) + 0.20 \cdot \mathcal{S} + 0.10 \cdot \mathcal{V}$$
     Evaluates Correctness, Regression Risk, Security, and Conciseness.
 
+* **`L-12` Abstract `ProviderAdapter` Interface & Registry (`src/just_enough_ai/providers/base.py`, `registry.py`) [PENDING]** ⭐ [Breakthrough #5]
+  - **Goal:** Define universal polymorphic interface and dynamic registry so any inference backend (REST API, local Ollama, or headless CLI IDE) can be plugged into the harness seamlessly.
+  - **Abstract Methods to Define:**
+    ```python
+    class ProviderAdapter(ABC):
+        @abstractmethod
+        async def generate(self, prompt: str, system_prompt: Optional[str] = None, files_context: Optional[Dict[str, str]] = None) -> ProviderResponse: ...
+        @abstractmethod
+        def is_available(self) -> bool: ...
+        @abstractmethod
+        def get_model_name(self) -> str: ...
+        @abstractmethod
+        def get_estimated_tier(self) -> ModelTier: ...
+        @abstractmethod
+        def get_rate_limit_status(self) -> RateLimitStatus: ...
+        @abstractmethod
+        def shutdown(self) -> None: ...
+    ```
+  - **Schemas:**
+    ```python
+    @dataclass
+    class ProviderResponse:
+        text: str
+        model_name: str
+        cost_usd: float
+        latency_ms: float
+        is_free_tier: bool
+        raw_metadata: Dict[str, Any]
+
+    @dataclass
+    class RateLimitStatus:
+        has_capacity: bool
+        retry_after_seconds: Optional[float] = None
+    ```
+  - **Registry:** `ProviderRegistry` class managing registration, initialization, and auto-discovery of available adapters.
+
+* **`L-13` Direct HTTP Adapters: `NebiusDirectAdapter` & `OllamaLocalAdapter` (`src/just_enough_ai/providers/nebius.py`, `ollama.py`) [PENDING]**
+  - **NebiusDirectAdapter:** Refactors `agent/runner.py` into a standardized adapter implementing `ProviderAdapter`. Connects to `https://api.tokenfactory.nebius.com/v1` for Nemotron Nano, Super, Ultra with exact token cost accounting and deterministic mock fallback.
+  - **OllamaLocalAdapter:** Connects to local Ollama daemon at `http://localhost:11434/api/generate`. Detects installed local models (`nemotron-mini`, `qwen2.5-coder`, `llama3.2`). Checks availability via `/api/tags`. Incurs exactly $0.00 token cost.
+
+* **`L-14` Google Antigravity Headless CLI Adapter (`src/just_enough_ai/providers/antigravity.py`) [PENDING]**
+  - **Goal:** Enable developers with Antigravity installed to utilize its underlying free-tier model for drafting and refactoring without a paid API key.
+  - **Implementation Flow:**
+    1. Check for `agy` binary in PATH or `C:\Users\<user>\.gemini\antigravity-ide`.
+    2. Dispatch headless task invocation passing the prompt and workspace path.
+    3. Monitor task completion or read generated markdown/code artifacts from Antigravity's artifact store (`brain/<conversation-id>/`).
+    4. Normalize extracted code solution into standard `ProviderResponse`.
+
+* **`L-15` Claude Code CLI PTY Adapter (`src/just_enough_ai/providers/claude_code.py`) [PENDING]**
+  - **Goal:** Enable developers with Claude Code CLI installed to leverage its free tier as an in-harness provider.
+  - **Implementation Flow:**
+    1. Check `shutil.which("claude")`.
+    2. Spawn subprocess with `--print` / non-interactive flags or run inside a pseudo-terminal (PTY) with `--dangerously-skip-permissions` to suppress interactive prompts.
+    3. Pipe output through Mayank's `strip_ansi` to eliminate terminal cursor codes.
+    4. Extract clean code patch and return `ProviderResponse`.
+
+* **`L-16` Zero-Cost Cascading Failover Router (`src/just_enough_ai/providers/cascade.py`) [PENDING]**
+  - **Goal:** Orchestrate zero-cost waterfall routing and automatic failover.
+  - **Routing Waterfall Logic:**
+    1. For simple/draft tasks, attempt **Tier 0 (Ollama Local)** first if local GPU headroom permits ($0.00).
+    2. If Ollama is unavailable or ungrounded, attempt **Tier 1 (Antigravity CLI or Claude Code CLI)** ($0.00 free tier).
+    3. If a Tier 1 provider returns HTTP 429 (`RateLimitError`), hits session limit, or times out:
+       - Log structured warning: `[CASCADE_FAILOVER] Provider '{name}' rate limited. Cascading to Nebius Token Factory...`
+       - Seamlessly dispatch to **Tier 2 (Nebius Cloud Nemotron Nano $0.15/1M or Super $0.375/1M)**.
+    4. Ensure the developer's agent loop never crashes or halts due to a provider-specific rate limit.
+
 ---
 
 ### 🛡️ Workstream 2: Mayank — The Sentinel (Cybersecurity Lead)
 **Owner:** Mayank  
-**Scope:** Subprocess execution sandbox, path traversal defense, AST security invariant linting, adversarial boundary fuzzing, credential masking, and the Differential AST Scope Lock.  
-**Status:** **0 / 6 Tasks Completed (Ready to Execute)**
+**Scope:** Subprocess execution sandbox, path traversal defense, AST security invariant linting, adversarial boundary fuzzing, credential masking, the Differential AST Scope Lock, and Provider CLI sandbox isolation with ANSI sanitization.  
+**Status:** **0 / 7 Tasks Completed (Ready to Execute)**
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                                MAYANK WORKFLOW                                   │
 │                                                                                  │
-│   Candidate Agent Code                                                           │
+│   Candidate Agent Code / CLI Subprocesses                                        │
 │           │                                                                      │
 │           ├──► [M-2] validate_safe_path() ──► Block ../ or symlink escapes       │
 │           │                                                                      │
 │           ├──► [M-3] lint_code_security() ──► Block eval, exec, hardcoded keys   │
 │           │                                                                      │
 │           ├──► [M-6] apply_ast_scope_lock() ──► Revert mutations outside scope   │
+│           │                                                                      │
+│           ├──► [M-7] run_provider_cli() + strip_ansi() ──► Sanitize CLI tools   │
 │           │                                                                      │
 │           ├──► [M-4] fuzz_generated_code() ──► Synthesize hostile boundary tests │
 │           │         └──► [M-1] run_in_sandbox() ──► Isolated subprocess (10s)    │
@@ -280,17 +368,41 @@ sequenceDiagram
   5. Unparse the sanitized AST back into Python source code using `ast.unparse(prop_tree)`.
   6. Return `applied_code` with a list of reverted unauthorized mutations.
 
+#### Task `M-7`: Provider CLI Sandbox Isolation & ANSI Sanitizer (`src/just_enough_ai/security/cli_sandbox.py`)
+* **Goal:** Ensure external CLI agent processes (`claude`, `agy`, `opencode`) run in clean, isolated subprocesses without credential leakage, and sanitize all terminal escape sequences from stdout.
+* **Function Signatures:**
+  ```python
+  def sanitize_provider_env(custom_env: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+      """Whitelist only essential system variables (PATH, HOME, USERPROFILE), scrubbing parent shell tokens."""
+
+  def strip_ansi_sequences(raw_text: str) -> str:
+      """Strip ANSI color codes (\x1b\[[0-9;]*[mK]), terminal control codes, and carriage return wipes."""
+
+  def run_provider_cli(
+      cmd: List[str],
+      cwd: str,
+      timeout_seconds: int = 60,
+      custom_env: Optional[Dict[str, str]] = None,
+  ) -> SandboxResult:
+      """Executes CLI tool inside a sanitized sandbox environment with strict timeout bounds."""
+  ```
+* **Agent Implementation Instructions:**
+  1. Implement ANSI regex pattern: `re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')`.
+  2. Normalize `\r\n` and handle carriage returns (`\r`) so progress spinner ticks are discarded.
+  3. Scrub parent process environment to ensure one tool's session credentials cannot bleed into another.
+  4. Integrate with Lead's `AntigravityCliAdapter` (`L-14`) and `ClaudeCodePtyAdapter` (`L-15`).
+
 * **Verification Command for Mayank:**
   ```bash
-  uv run pytest tests/test_security_sandbox.py -v
+  uv run pytest tests/test_security_sandbox.py tests/test_cli_sandbox.py -v
   ```
 
 ---
 
 ### 🎨 Workstream 3: Manjiri — The Interface & Client Integration Lead
 **Owner:** Manjiri  
-**Scope:** Mobile-first responsive web cockpit, client-side API service, SSE stream consumer, real-time cost telemetry badge, file tree explorer, visual diff viewer, and CLI spinners.  
-**Status:** **0 / 6 Tasks Completed (Ready to Execute)**
+**Scope:** Mobile-first responsive web cockpit, client-side API service, SSE stream consumer, real-time cost telemetry badge, file tree explorer, visual diff viewer, CLI spinners, `jeai setup` auto-detection wizard, and the Provider Status HUD.  
+**Status:** **0 / 8 Tasks Completed (Ready to Execute)**
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -309,7 +421,11 @@ sequenceDiagram
 │           │                                                                      │
 │           ├──► [UI-5] Red/Green Syntax-Highlighted Diff Viewer                   │
 │           │                                                                      │
-│           └──► [UI-6] Rich CLI Spinners & Status Polish in cli.py                │
+│           ├──► [UI-6] Rich CLI Spinners & Status Polish in cli.py                │
+│           │                                                                      │
+│           ├──► [UI-7] jeai setup Auto-Detection CLI Wizard                       │
+│           │                                                                      │
+│           └──► [UI-8] Web Cockpit Provider Status HUD & Cascade Badges           │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -372,8 +488,30 @@ sequenceDiagram
   - Pulsing spinner while awaiting Nebius streaming tokens.
   - Formatted colored markdown output for generated solutions.
 
+#### Task `UI-7`: `jeai setup` CLI Auto-Detection Wizard (`src/just_enough_ai/cli.py`)
+* **Goal:** A 1-command onboarding wizard that scans the developer's system for installed agentic IDEs, local Ollama, and Nebius credentials.
+* **Implementation Flow:**
+  1. Add `jeai setup` CLI command.
+  2. Runs checks:
+     - Detects `agy` CLI $\to$ `[FOUND: Google Antigravity]`
+     - Detects `claude` CLI $\to$ `[FOUND: Claude Code CLI]`
+     - Detects `ollama` daemon $\to$ `[FOUND: Ollama on http://localhost:11434]` (queries tags for local models)
+     - Checks `NEBIUS_API_KEY` $\to$ `[FOUND: Nebius Token Factory Cloud Key]`
+  3. Writes configuration to `~/.jeai/providers.json` with user-confirmed default priority.
+  4. Prints summary table showing total free compute discovered on the system.
+
+#### Task `UI-8`: Web Cockpit Provider Status HUD & Cascade Badges (`src/just_enough_ai/server.py`)
+* **Goal:** Give developers visual transparency over which inference provider is handling their request and real-time cascading alerts.
+* **Component Features:**
+  - Live Provider Pill Bar in the sticky top header:
+    - `🟢 Antigravity (Free)` | `🟢 Claude Code (Free)` | `🟡 Ollama (Local)` | `🔵 Nebius (Cloud Fallback)`
+  - Active Execution Badge: Lights up the specific provider currently streaming tokens.
+  - Cascading Failover Toast Alert: If an upstream provider rate limits, displays an amber toast:
+    `⚠️ Antigravity Free-Tier quota exhausted (429). Seamlessly escalated to Nebius Nemotron Nano ($0.0001).`
+
 * **Verification Command for Manjiri:**
   ```bash
+  uv run jeai setup
   uv run jeai server
   # Open http://localhost:8000 on desktop or phone on local WiFi
   ```
@@ -382,8 +520,8 @@ sequenceDiagram
 
 ### 📊 Workstream 4: Data Teammate — The Evaluator (Data & Benchmarks Lead)
 **Owner:** Data Lead  
-**Scope:** 50-task benchmark dataset, edge-case fuzzing corpus, empirical cost/latency comparison tables, and README benchmark graphics.  
-**Status:** **1 / 4 Tasks Completed (25%)**
+**Scope:** 50-task benchmark dataset, edge-case fuzzing corpus, empirical cost/latency comparison tables, multi-provider performance evals, and README benchmark graphics.  
+**Status:** **1 / 5 Tasks Completed (20%)**
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -399,8 +537,11 @@ sequenceDiagram
 │           ├──► [D-3] Curate 15 Boundary Edge-Cases in data/edge_cases/           │
 │           │         (Used by Mayank's fuzzer to prove safety)                    │
 │           │                                                                      │
-│           └──► [D-4] Run Evaluation Suite & Generate benchmark_report.md         │
-│                     (Produces concrete token savings tables for judges)          │
+│           ├──► [D-4] Run Evaluation Suite & Generate benchmark_report.md         │
+│           │         (Produces concrete token savings tables for judges)          │
+│           │                                                                      │
+│           └──► [D-5] Multi-Provider Latency & Failover Resilience Benchmark      │
+│                     (Tests Nebius vs Ollama vs Antigravity vs Claude Code)       │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -451,6 +592,20 @@ sequenceDiagram
     | **Pure Nemotron Ultra (253B)** | $1.80 | $0.360 | 71.2% |
     | **Just-Enough-AI (Dynamic Tiers)** | **$0.28 (blended)** | **$0.056** | **95.5% Savings** |
 
+#### Task `D-5`: Multi-Provider Latency & Failover Resilience Benchmark (`data/results/provider_benchmark.md`)
+* **Goal:** Empirically compare execution latency and resilience across Direct API vs local Ollama vs CLI subprocesses (Antigravity, Claude Code), demonstrating that zero-cost cascading failover works without dropping tasks.
+* **Evaluation Scenarios:**
+  1. **Latency Overhead by Provider:**
+     | Provider | Execution Mechanism | Cold-Start Overhead | Token Latency | Total Cost / Task |
+     |---|---|:---:|:---:|:---:|
+     | **Ollama Local** | HTTP localhost:11434 | ~120ms | ~45 t/s | **$0.00** |
+     | **Antigravity CLI** | Headless `agy` CLI subshell | ~1,100ms | ~60 t/s | **$0.00** |
+     | **Claude Code CLI** | PTY Subprocess (`--print`) | ~950ms | ~75 t/s | **$0.00** |
+     | **Nebius Token Factory** | Direct HTTPS Streaming | ~210ms | ~110 t/s | $0.0001 (Nano) |
+  2. **Cascading Failover Test:**
+     - Artificially inject simulated HTTP 429 / exit code 1 into Antigravity adapter.
+     - Measure time for `CascadingProviderRouter` to detect rate limit and seamlessly resume execution on Nebius cloud. Target: failover transition under 350ms with 100% task completion.
+
 * **Verification Command for Data Lead:**
   ```bash
   uv run python -m json.tool data/benchmarks/tasks_v1.json > /dev/null
@@ -463,9 +618,10 @@ sequenceDiagram
 
 ```
 DAY 1 (TODAY) ──────────────────────────► DAY 2 ──────────────────────────────► DAY 3 ──────────────────────────────► DAY 4 (SUBMISSION)
-• Lead completes L-1 to L-11 [DONE]     • Mayank completes M-1, M-2, M-3      • Mayank completes M-6 (AST Lock)     • Record 3-minute video
-• FastAPI server & CLI live [DONE]      • Manjiri builds UI-1, UI-2           • Manjiri completes UI-4, UI-5        • Tag Git release v1.0.0
-• KV governor & SteerLM live [DONE]     • Data Lead expands 50 tasks (D-2)    • Data Lead outputs D-4 report tables • Submit on Devpost
+• Lead completes L-1 to L-11 [DONE]     • Lead implements L-12, L-13          • Lead completes L-14, L-15, L-16     • Full end-to-end integration
+• FastAPI server & CLI live [DONE]      • Mayank completes M-1, M-2, M-7      • Mayank completes M-6 (AST Lock)     • Record 3-minute video
+• KV governor & SteerLM live [DONE]     • Manjiri builds UI-1, UI-2, UI-7     • Manjiri completes UI-4, UI-5, UI-8  • Tag Git release v1.0.0
+• Benchmark scaffold ready [DONE]       • Data Lead expands 50 tasks (D-2)    • Data Lead outputs D-4, D-5 benchmarks • Submit on Devpost
 ```
 
 ---
