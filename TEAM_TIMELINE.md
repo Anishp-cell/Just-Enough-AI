@@ -12,7 +12,7 @@
 | Teammate | Strategic Role | Tasks Completed | In Progress | Pending | Overall % | Current Status |
 |---|---|:---:|:---:|:---:|:---:|---|
 | **Lead (You)** | The Brain & Systems Architect | 11 / 16 | 0 | 5 | **69%** | 🟢 Phase 1 Live; Phase 2 (Universal Meta-Harness & Adapters) assigned (`L-12` to `L-16`) |
-| **Mayank** | The Sentinel (Cybersecurity Lead) | 0 / 7 | 0 | 7 | **0%** | 🟡 Ready to start (`M-1` to `M-7` including CLI sandbox & ANSI sanitizer) |
+| **Mayank** | The Sentinel (Cybersecurity Lead) | 7 / 7 | 0 | 0 | **100%** | 🟢 Complete (M-1 to M-7 implemented & verified with 35 passing tests) |
 | **Manjiri** | The Interface & Client Integration | 0 / 8 | 0 | 8 | **0%** | 🟡 Ready to start (`UI-1` to `UI-8` including `jeai setup` & Provider HUD) |
 | **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 5 | 0 | 4 | **20%** | 🟡 Ready to execute (`D-2` to `D-5` including multi-provider benchmarks) |
 
@@ -227,7 +227,7 @@ sequenceDiagram
 ### 🛡️ Workstream 2: Mayank — The Sentinel (Cybersecurity Lead)
 **Owner:** Mayank  
 **Scope:** Subprocess execution sandbox, path traversal defense, AST security invariant linting, adversarial boundary fuzzing, credential masking, the Differential AST Scope Lock, and Provider CLI sandbox isolation with ANSI sanitization.  
-**Status:** **0 / 7 Tasks Completed (Ready to Execute)**
+**Status:** **7 / 7 Tasks Completed (100% Verified ✅)**
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
