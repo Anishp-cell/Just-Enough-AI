@@ -1159,7 +1159,7 @@ def serve_cockpit():
     function generateDiffView() {
       const diffBox = document.getElementById('diffContainer');
       diffBox.innerHTML = '';
-      const lines = rawOutputBuffer.split('\\n');
+      const lines = rawOutputBuffer.split('\n');
       if (lines.length === 0 || !rawOutputBuffer) {
         diffBox.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">No code diff available yet. Execute a task to inspect changes.</div>';
         return;
@@ -1237,66 +1237,97 @@ def serve_cockpit():
           body: JSON.stringify({ task, mode, force_tier: forceTier }),
         });
 
+        if (!res.ok) {
+          const errDetail = await res.text();
+          throw new Error(`Server returned HTTP ${res.status}: ${errDetail}`);
+        }
+
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
 
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
 
-          const text = decoder.decode(value);
-          const lines = text.split('\\n');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-          for (const line of lines) {
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
             if (!line.startsWith('data: ')) continue;
-            const payload = line.slice(6);
+            const payload = line.slice(6).trim();
+            if (!payload) continue;
 
             if (payload === '[DONE]') {
               statusBadge.textContent = 'Completed ✓';
               statusBadge.style.color = '#10b981';
               commitBtn.style.display = 'inline-flex';
             } else if (payload.startsWith('[ROUTING]')) {
-              const d = JSON.parse(payload.slice(9));
-              const tier = (d.selected_tier || 'nano').toLowerCase();
-              telBadge.className = `model-badge ${tier}`;
-              telBadge.textContent = `⚡ ${tier.toUpperCase()}`;
-              telModelId.textContent = d.model_id || 'Nemotron';
-              telReason.textContent = d.reasoning || 'Evaluated task requirements';
-              statusBadge.textContent = `Streaming (${tier.toUpperCase()})...`;
+              try {
+                const d = JSON.parse(payload.slice(9).trim());
+                const tier = (d.selected_tier || 'nano').toLowerCase();
+                telBadge.className = `model-badge ${tier}`;
+                telBadge.textContent = `⚡ ${tier.toUpperCase()}`;
+                telModelId.textContent = d.model_id || 'Nemotron';
+                telReason.textContent = d.reasoning || 'Evaluated task requirements';
+                statusBadge.textContent = `Streaming (${tier.toUpperCase()})...`;
 
-              // Highlight active provider pill
-              document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
-              const nebiusPill = document.getElementById('pill-nebius');
-              if (nebiusPill) nebiusPill.classList.add('active');
+                // Highlight active provider pill
+                document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
+                const nebiusPill = document.getElementById('pill-nebius');
+                if (nebiusPill) nebiusPill.classList.add('active');
+              } catch (e) {
+                console.warn('Failed parsing ROUTING payload:', e, payload);
+              }
             } else if (payload.startsWith('[EVENT]')) {
-              const evt = JSON.parse(payload.slice(7));
-              loopEventsBuffer.push(evt);
-              output.textContent += `[Step ${evt.step} - ${evt.event_type}] ${evt.message}\\n`;
-              output.scrollTop = output.scrollHeight;
+              try {
+                const evt = JSON.parse(payload.slice(7).trim());
+                loopEventsBuffer.push(evt);
+                output.textContent += `[Step ${evt.step} - ${evt.event_type}] ${evt.message}\n`;
+                output.scrollTop = output.scrollHeight;
+              } catch (e) {
+                console.warn('Failed parsing EVENT payload:', e, payload);
+              }
             } else if (payload.startsWith('[METADATA]')) {
-              const m = JSON.parse(payload.slice(10));
-              telCost.textContent = `$${m.actual_cost_usd.toFixed(6)}`;
-              telSavings.textContent = `Saved: $${m.savings_vs_ultra_usd.toFixed(6)} vs Ultra`;
-              telTokens.textContent = `${m.total_tokens} (${m.prompt_tokens} in / ${m.completion_tokens} out)`;
-              telLatency.textContent = `${m.latency_ms.toFixed(0)}ms`;
-              recordSavings(m.savings_vs_ultra_usd);
+              try {
+                const m = JSON.parse(payload.slice(10).trim());
+                telCost.textContent = `$${m.actual_cost_usd.toFixed(6)}`;
+                telSavings.textContent = `Saved: $${m.savings_vs_ultra_usd.toFixed(6)} vs Ultra`;
+                telTokens.textContent = `${m.total_tokens} (${m.prompt_tokens} in / ${m.completion_tokens} out)`;
+                telLatency.textContent = `${m.latency_ms.toFixed(0)}ms`;
+                recordSavings(m.savings_vs_ultra_usd);
 
-              // Show HelpSteer2 scorecard
-              const steerCard = document.getElementById('steerScorecard');
-              steerCard.style.display = 'block';
-              document.getElementById('barCorrectness').style.width = '100%';
-              document.getElementById('barRegression').style.width = '5%';
-              document.getElementById('barSecurity').style.width = '100%';
+                // Show HelpSteer2 scorecard
+                const steerCard = document.getElementById('steerScorecard');
+                steerCard.style.display = 'block';
+                document.getElementById('barCorrectness').style.width = '100%';
+                document.getElementById('barRegression').style.width = '5%';
+                document.getElementById('barSecurity').style.width = '100%';
+              } catch (e) {
+                console.warn('Failed parsing METADATA payload:', e, payload);
+              }
             } else {
-              const unescaped = payload.replace(/\\\\n/g, '\\n');
+              const unescaped = payload.replace(/\\n/g, '\n');
               rawOutputBuffer += unescaped;
               output.textContent += unescaped;
               output.scrollTop = output.scrollHeight;
             }
           }
         }
+
+        // Process any residual in buffer
+        if (buffer.trim().startsWith('data: ')) {
+          const payload = buffer.trim().slice(6).trim();
+          if (payload === '[DONE]') {
+            statusBadge.textContent = 'Completed ✓';
+            statusBadge.style.color = '#10b981';
+            commitBtn.style.display = 'inline-flex';
+          }
+        }
       } catch (err) {
-        output.textContent += '\\n[Network/Stream Error]: ' + err.message;
+        output.textContent += '\n[Network/Stream Error]: ' + err.message;
         statusBadge.textContent = 'Error';
         statusBadge.style.color = '#ef4444';
       } finally {
