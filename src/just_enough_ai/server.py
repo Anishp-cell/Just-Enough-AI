@@ -239,7 +239,7 @@ def api_pwa_manifest():
 
 @app.get("/")
 def serve_cockpit():
-    html = """<!DOCTYPE html>
+    html = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -814,7 +814,7 @@ def serve_cockpit():
   </div>
 
   <!-- Execution Controls Grid -->
-  <div class="controls-grid">
+  <div class="controls-grid" style="grid-template-columns: 1fr 1fr 1fr;">
     <div>
       <label for="modeSelect">Execution Mode</label>
       <select id="modeSelect">
@@ -829,6 +829,13 @@ def serve_cockpit():
         <option value="nano">⚡ Force Nano ($0.15/1M)</option>
         <option value="super">⚖️ Force Super ($0.375/1M)</option>
         <option value="ultra">🧠 Force Ultra ($1.80/1M)</option>
+      </select>
+    </div>
+    <div>
+      <label for="engineSelect">Execution Pipeline</label>
+      <select id="engineSelect">
+        <option value="run" selected>⚡ Direct Stream (/api/run)</option>
+        <option value="loop">🔄 Agentic Loop (/api/loop)</option>
       </select>
     </div>
   </div>
@@ -922,6 +929,7 @@ def serve_cockpit():
   <div class="tabs-row">
     <button class="tab-btn active" id="tabTerminal" onclick="switchTab('terminal')">Streaming Terminal</button>
     <button class="tab-btn" id="tabDiff" onclick="switchTab('diff')">Visual Code Diff</button>
+    <button class="tab-btn" id="tabLoop" onclick="switchTab('loop')">Agent Loop Logs</button>
   </div>
 
   <!-- Terminal Output Pane -->
@@ -929,6 +937,9 @@ def serve_cockpit():
 
   <!-- UI-5: Visual Syntax-Highlighted Diff Viewer -->
   <div id="diffContainer" class="diff-container"></div>
+
+  <!-- Agent Loop Event Log Pane -->
+  <div id="loopContainer" class="diff-container"></div>
 
   <!-- Output Action Bar (Approve & Commit / Copy) -->
   <div class="output-actions-bar">
@@ -958,6 +969,7 @@ def serve_cockpit():
   <!-- Client-Side Engine (UI-1, UI-2, UI-3, UI-4, UI-5, UI-8) -->
   <script>
     let rawOutputBuffer = '';
+    let loopEventsBuffer = [];
     let currentModalPath = '';
     let allProjectFiles = [];
 
@@ -966,6 +978,7 @@ def serve_cockpit():
       fetchHardwareProfile();
       fetchProviderStatus();
       loadProjectFiles();
+      loadCumulativeSavings();
 
       document.getElementById('task').addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -974,6 +987,19 @@ def serve_cockpit():
         }
       });
     });
+
+    function loadCumulativeSavings() {
+      const saved = parseFloat(localStorage.getItem('jeai_cumulative_savings') || '0');
+      if (saved > 0) {
+        document.getElementById('telSavings').textContent = `Total Saved: $${saved.toFixed(5)} vs Ultra`;
+      }
+    }
+
+    function recordSavings(dollars) {
+      let saved = parseFloat(localStorage.getItem('jeai_cumulative_savings') || '0');
+      saved += dollars;
+      localStorage.setItem('jeai_cumulative_savings', saved.toString());
+    }
 
     async function fetchHardwareProfile() {
       try {
@@ -1026,15 +1052,33 @@ def serve_cockpit():
       }
     }
 
+    // UI-4: Hierarchical File Tree
     function renderFileTree(files) {
       const list = document.getElementById('fileTreeList');
       list.innerHTML = '';
-      files.slice(0, 100).forEach(file => {
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        item.innerHTML = `<span>📄 ${file}</span><span style="font-size:0.7rem; color:var(--accent);">View</span>`;
-        item.onclick = () => previewFile(file);
-        list.appendChild(item);
+
+      const groups = {};
+      files.forEach(f => {
+        const parts = f.split('/');
+        const folder = parts.length > 1 ? parts[0] + '/' : 'root/';
+        if (!groups[folder]) groups[folder] = [];
+        groups[folder].push(f);
+      });
+
+      Object.keys(groups).sort().forEach(folder => {
+        const folderHead = document.createElement('div');
+        folderHead.style.cssText = 'font-size:0.75rem; font-weight:700; color:var(--text-muted); padding:0.35rem 0; margin-top:0.3rem; border-bottom:1px solid rgba(255,255,255,0.05);';
+        folderHead.textContent = `📁 ${folder} (${groups[folder].length})`;
+        list.appendChild(folderHead);
+
+        groups[folder].forEach(file => {
+          const item = document.createElement('div');
+          item.className = 'file-item';
+          const fileName = file.split('/').pop();
+          item.innerHTML = `<span>&nbsp;&nbsp;📄 ${fileName}</span><span style="font-size:0.7rem; color:var(--accent);">View</span>`;
+          item.onclick = () => previewFile(file);
+          list.appendChild(item);
+        });
       });
     }
 
@@ -1084,29 +1128,31 @@ def serve_cockpit():
       document.getElementById('task').value = '';
       document.getElementById('terminalPane').textContent = '// Ready for next coding prompt...';
       document.getElementById('diffContainer').innerHTML = '';
+      document.getElementById('loopContainer').innerHTML = '';
       document.getElementById('telemetry').classList.remove('visible');
       document.getElementById('commitBtn').style.display = 'none';
       rawOutputBuffer = '';
+      loopEventsBuffer = [];
     }
 
     function switchTab(tab) {
       const terminalPane = document.getElementById('terminalPane');
       const diffContainer = document.getElementById('diffContainer');
+      const loopContainer = document.getElementById('loopContainer');
       const tabTerminal = document.getElementById('tabTerminal');
       const tabDiff = document.getElementById('tabDiff');
+      const tabLoop = document.getElementById('tabLoop');
 
-      if (tab === 'terminal') {
-        terminalPane.style.display = 'block';
-        diffContainer.style.display = 'none';
-        tabTerminal.classList.add('active');
-        tabDiff.classList.remove('active');
-      } else {
-        terminalPane.style.display = 'none';
-        diffContainer.style.display = 'block';
-        tabTerminal.classList.remove('active');
-        tabDiff.classList.add('active');
-        generateDiffView();
-      }
+      terminalPane.style.display = tab === 'terminal' ? 'block' : 'none';
+      diffContainer.style.display = tab === 'diff' ? 'block' : 'none';
+      loopContainer.style.display = tab === 'loop' ? 'block' : 'none';
+
+      tabTerminal.classList.toggle('active', tab === 'terminal');
+      tabDiff.classList.toggle('active', tab === 'diff');
+      tabLoop.classList.toggle('active', tab === 'loop');
+
+      if (tab === 'diff') generateDiffView();
+      if (tab === 'loop') generateLoopLogs();
     }
 
     // UI-5: Generate Visual Code Diff
@@ -1115,7 +1161,7 @@ def serve_cockpit():
       diffBox.innerHTML = '';
       const lines = rawOutputBuffer.split('\\n');
       if (lines.length === 0 || !rawOutputBuffer) {
-        diffBox.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">No code diff available yet. Execute a task to see changes.</div>';
+        diffBox.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">No code diff available yet. Execute a task to inspect changes.</div>';
         return;
       }
 
@@ -1136,6 +1182,22 @@ def serve_cockpit():
       });
     }
 
+    function generateLoopLogs() {
+      const box = document.getElementById('loopContainer');
+      box.innerHTML = '';
+      if (loopEventsBuffer.length === 0) {
+        box.innerHTML = '<div style="color:var(--text-muted); padding:1rem;">No multi-step loop events recorded. Switch pipeline to "Agentic Loop" to run multi-step execution.</div>';
+        return;
+      }
+      loopEventsBuffer.forEach(evt => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:0.4rem 0.6rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem;';
+        const color = evt.event_type === 'KV_BUDGET' ? '#06b6d4' : evt.event_type === 'SPECULATION' ? '#f59e0b' : '#10b981';
+        div.innerHTML = `<span style="color:${color}; font-weight:700;">[Step ${evt.step} - ${evt.event_type}]</span> <span style="color:#e2e8f0;">${evt.message}</span>`;
+        box.appendChild(div);
+      });
+    }
+
     // UI-1: SSE Stream Consumer with Real-Time Protocol Decoding
     async function runTask() {
       const task = document.getElementById('task').value.trim();
@@ -1143,6 +1205,7 @@ def serve_cockpit():
 
       const mode = document.getElementById('modeSelect').value;
       const forceTier = document.getElementById('tierSelect').value || null;
+      const engine = document.getElementById('engineSelect').value;
       const runBtn = document.getElementById('runBtn');
       const output = document.getElementById('terminalPane');
       const statusBadge = document.getElementById('statusBadge');
@@ -1159,13 +1222,16 @@ def serve_cockpit():
       runBtn.disabled = true;
       output.textContent = '';
       rawOutputBuffer = '';
+      loopEventsBuffer = [];
       statusBadge.textContent = 'Connecting...';
       statusBadge.style.color = '#38bdf8';
       telemetry.classList.add('visible');
       commitBtn.style.display = 'none';
 
+      const endpoint = engine === 'loop' ? '/api/loop' : '/api/run';
+
       try {
-        const res = await fetch('/api/run', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ task, mode, force_tier: forceTier }),
@@ -1202,12 +1268,18 @@ def serve_cockpit():
               document.querySelectorAll('.provider-pill').forEach(p => p.classList.remove('active'));
               const nebiusPill = document.getElementById('pill-nebius');
               if (nebiusPill) nebiusPill.classList.add('active');
+            } else if (payload.startsWith('[EVENT]')) {
+              const evt = JSON.parse(payload.slice(7));
+              loopEventsBuffer.push(evt);
+              output.textContent += `[Step ${evt.step} - ${evt.event_type}] ${evt.message}\\n`;
+              output.scrollTop = output.scrollHeight;
             } else if (payload.startsWith('[METADATA]')) {
               const m = JSON.parse(payload.slice(10));
               telCost.textContent = `$${m.actual_cost_usd.toFixed(6)}`;
               telSavings.textContent = `Saved: $${m.savings_vs_ultra_usd.toFixed(6)} vs Ultra`;
               telTokens.textContent = `${m.total_tokens} (${m.prompt_tokens} in / ${m.completion_tokens} out)`;
               telLatency.textContent = `${m.latency_ms.toFixed(0)}ms`;
+              recordSavings(m.savings_vs_ultra_usd);
 
               // Show HelpSteer2 scorecard
               const steerCard = document.getElementById('steerScorecard');
@@ -1235,10 +1307,21 @@ def serve_cockpit():
     // UI-5: One-Tap "Approve & Commit" to Git
     async function approveAndCommit() {
       const commitBtn = document.getElementById('commitBtn');
+      const taskVal = document.getElementById('task').value;
+      
+      // Auto-detect target file path from prompt if available
+      let defaultPath = 'src/just_enough_ai/patch.py';
+      const fileMatch = taskVal.match(/\[File:\s*([^\s\]]+)\]/);
+      if (fileMatch && fileMatch[1]) {
+        defaultPath = fileMatch[1];
+      } else if (currentModalPath) {
+        defaultPath = currentModalPath;
+      }
+
       const promptText = prompt('Enter Git commit message:', 'Applied verified patch via Just-Enough-AI');
       if (!promptText) return;
 
-      const filePath = prompt('Enter target file path in repository:', 'src/just_enough_ai/patch.py');
+      const filePath = prompt('Enter target file path in repository:', defaultPath);
       if (!filePath) return;
 
       commitBtn.disabled = true;
@@ -1257,9 +1340,9 @@ def serve_cockpit():
         });
         const data = await res.json();
         if (data.success) {
-          alert('✓ Successfully committed! ' + data.message);
+          alert('✓ Successfully committed to repository! ' + data.message);
         } else {
-          alert('Failed: ' + (data.detail || data.message));
+          alert('Commit failed: ' + (data.detail || data.message));
         }
       } catch (err) {
         alert('Commit request failed: ' + err.message);
