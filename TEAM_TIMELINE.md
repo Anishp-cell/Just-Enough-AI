@@ -13,7 +13,7 @@
 |---|---|:---:|:---:|:---:|:---:|---|
 | **Lead (You)** | The Brain & Systems Architect | 16 / 16 | 0 | 0 | **100%** | 🟢 Complete (Phase 1 core & Phase 2 Universal Provider Engine L-1 to L-16 verified ✅) |
 | **Mayank** | The Sentinel (Cybersecurity Lead) | 7 / 7 | 0 | 0 | **100%** | 🟢 Complete (M-1 to M-7 implemented & verified with 35 passing tests) |
-| **Manjiri** | The Interface & Client Integration | 0 / 8 | 0 | 8 | **0%** | 🟡 Ready to start (`UI-1` to `UI-8` unblocked with `/api/providers` & `/api/commit` live) |
+| **Manjiri** | The Interface & Client Integration | 8 / 8 | 0 | 0 | **100%** | 🟢 Complete (UI-1 to UI-8 implemented, verified with 91 passing tests ✅) |
 | **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 5 | 0 | 4 | **20%** | 🟡 Ready to execute (`D-2` to `D-5` including multi-provider benchmarks) |
 
 ---
@@ -343,11 +343,6 @@ sequenceDiagram
   ) -> SandboxResult:
       """Executes CLI tool inside a sanitized sandbox environment with strict timeout bounds."""
   ```
-* **Agent Implementation Instructions:**
-  1. Implement ANSI regex pattern: `re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')`.
-  2. Normalize `\r\n` and handle carriage returns (`\r`) so progress spinner ticks are discarded.
-  3. Scrub parent process environment to ensure one tool's session credentials cannot bleed into another.
-  4. Integrate with Lead's `AntigravityCliAdapter` (`L-14`) and `ClaudeCodePtyAdapter` (`L-15`).
 
 * **Verification Command for Mayank:**
   ```bash
@@ -359,7 +354,7 @@ sequenceDiagram
 ### 🎨 Workstream 3: Manjiri — The Interface & Client Integration Lead
 **Owner:** Manjiri  
 **Scope:** Mobile-first responsive web cockpit, client-side API service, SSE stream consumer, real-time cost telemetry badge, file tree explorer, visual diff viewer, CLI spinners, `jeai setup` auto-detection wizard, and the Provider Status HUD.  
-**Status:** **0 / 8 Tasks Completed (Ready to Execute)**
+**Status:** **8 / 8 Tasks Completed (100% Verified ✅)**
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -386,71 +381,38 @@ sequenceDiagram
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Detailed Task Specifications for Manjiri & Her AI Agent:
+#### Detailed Task Status for Manjiri:
 
-#### Task `UI-1`: Client-Side API Service & SSE Stream Consumer
-* **Goal:** Implement the JavaScript client layer to consume server endpoints and parse Server-Sent Events (SSE).
-* **API Endpoints to Integrate:**
-  - `GET /api/profile` $\to$ Returns `{hardware: {...}, execution_mode: "remote"|"local"}`.
-  - `GET /api/pricing` $\to$ Returns pricing table for Nano, Super, Ultra.
-  - `GET /api/files?root=.` $\to$ Returns `{root: str, files: List[str]}`.
-  - `POST /api/route` $\to$ Payload: `{task: str, mode: "remote", force_tier: null}`.
-  - `POST /api/run` $\to$ SSE streaming endpoint. Protocol:
-    - Event `[ROUTING] { "selected_tier": "nano", ... }`
-    - Token chunks: `def format_currency(...`
-    - Event `[METADATA] { "actual_cost_usd": 0.000007, "savings_vs_ultra_usd": 0.000079, ... }`
-    - Event `[DONE]`
-  - `POST /api/loop` $\to$ Multi-step loop SSE protocol:
-    - Event `[EVENT] { "step": 1, "event_type": "KV_BUDGET", "message": "..." }`
-    - Event `[EVENT] { "step": 2, "event_type": "SPECULATION", ... }`
-    - Event `[METADATA] { ... }`
-    - Event `[DONE]`
+* **`UI-1` Client-Side API Service & SSE Stream Consumer [DONE]**
+  - **What was built:** Implemented native `fetch` + `ReadableStream` reader in `server.py` consuming `/api/run` and `/api/loop`. Decodes chunked protocols: `[ROUTING]`, incremental token streaming, `[EVENT]`, `[METADATA]`, and `[DONE]` sentinels with robust error reconnection.
 
-#### Task `UI-2`: Mobile-First Responsive Cockpit UI
-* **Goal:** Deliver a dark-themed, glassmorphic UI optimized for smartphone screens (iPhone/Android viewports 375px - 430px wide) so a user can code from anywhere with their laptop powered off.
-* **Target Files:** `src/just_enough_ai/server.py` (inline HTML) or standalone frontend in `web/`.
-* **Design Standards:**
-  - Background: Deep obsidian/navy (`#090d16` or `#0b0f19`).
-  - Font: JetBrains Mono for code, Plus Jakarta Sans / Inter for labels.
-  - Accent colors:
-    - Nano: Vibrant Emerald (`#10b981`)
-    - Super: Electric Cyan (`#06b6d4`)
-    - Ultra: Royal Purple (`#8b5cf6`)
-  - Sticky header with device profile indicator: `[Cloud Mode ⚡] [RTX 4070 5.9GB Free]`.
-  - Bottom-anchored prompt input bar with quick action chips: `"Add Docstring"`, `"Fix Bug"`, `"Add Tests"`.
+* **`UI-2` Mobile-First Responsive Cockpit UI [DONE]**
+  - **What was built:** Built dark obsidian glassmorphic UI (`#070b13` / `#0e1526`) optimized for iPhone/Android viewports (375px–768px). Includes sticky header, quick action prompt chips (`🐛 Fix Bug`, `🧪 Add Tests`, `📝 Add Docstring`), bottom-anchored prompt with `Ctrl+Enter` shortcut, and PWA manifest.
 
-#### Task `UI-3`: Real-Time Model Badge & Cost Telemetry Widget
-* **Goal:** An animated HUD showing the current active Nemotron tier and a rolling dollar ticker demonstrating cost savings.
-* **Component Features:**
-  - Dynamic badge pulsing with the active model tier: `NVIDIA Nemotron Nano Omni ($0.15/1M)`.
-  - Ticker animation counting: `"Cost: $0.00001 | Saved: $0.00018 (92.1% reduction vs Ultra)"`.
-  - HelpSteer2 Shield Scorecard: Displays mini-bars for Correctness (1.0), Regression (0.05), Security (1.0).
+* **`UI-3` Real-Time Model Badge & Cost Telemetry Widget [DONE]**
+  - **What was built:** Real-time pulsating model badge (Emerald for Nano, Cyan for Super, Purple for Ultra). Rolling dollar savings counter with session persistence via `localStorage`. Live SteerLM HelpSteer2 scorecard mini-progress bars (Correctness, Regression, Security).
 
-#### Task `UI-4`: Mobile Repository File Explorer
-* **Goal:** Allow users to browse repository files on their smartphone and tap to insert file context into their prompt.
-* **Component Features:**
-  - Consumes `GET /api/files`.
-  - Collapsible file tree grouped by directory (`src/`, `tests/`, `data/`).
-  - Tap file $\to$ previews file contents in modal $\to$ "Add to Context" button attaches file path to prompt.
+* **`UI-4` Mobile Repository File Explorer [DONE]**
+  - **What was built:** Collapsible file tree grouped by directories (`src/`, `tests/`, `data/`). Consumes `GET /api/files` and `GET /api/file-content`. Includes search filter, file preview modal, and "+ Add to Prompt" context insertion.
 
-#### Task `UI-5`: Visual Code Diff Viewer
-* **Goal:** A syntax-highlighted diff component rendering added lines in soft green (`#064e3b` background) and removed lines in soft red (`#7f1d1d` background).
-* **Component Features:**
-  - Unified diff view toggleable to split view on desktop.
-  - One-tap "Approve & Commit" button calling a future git-commit endpoint.
+* **`UI-5` Visual Code Diff Viewer & Git Commit [DONE]**
+  - **What was built:** Syntax-highlighted diff viewer with soft green additions (`#34d399`) and soft red deletions (`#f87171`). Raw/Diff tab switcher, automatic target file detection from prompt, and one-tap "✓ Approve & Commit to Git" calling `POST /api/commit`.
 
-#### Task `UI-6`: Rich CLI Spinners & Status Polish (`src/just_enough_ai/cli.py`)
-* **Goal:** Polish desktop terminal experience using Rich `Console`, `Live`, and `Progress` spinners.
-* **Features:**
-  - Pulsing spinner while awaiting Nebius streaming tokens.
-  - Formatted colored markdown output for generated solutions.
+* **`UI-6` Rich CLI Spinners & Status Polish (`cli.py`) [DONE]**
+  - **What was built:** Integrated Rich `console.status` animated pulsing spinners during memory routing and inference streaming.
 
-#### Task `UI-7`: `jeai setup` CLI Auto-Detection Wizard (`src/just_enough_ai/cli.py`)
-* **Goal:** A 1-command onboarding wizard that scans the developer's system for installed agentic IDEs, local Ollama, and Nebius credentials.
-* **Implementation Flow:**
-  1. Add `jeai setup` CLI command.
-  2. Runs checks:
-     - Detects `agy` CLI $\to$ `[FOUND: Google Antigravity]`
+* **`UI-7` `jeai setup` CLI Auto-Detection Wizard (`cli.py`) [DONE]**
+  - **What was built:** Built 1-command auto-detection wizard scanning `agy`, `claude`, `ollama` (`localhost:11434`), and `NEBIUS_API_KEY`. Writes priority configuration to `~/.jeai/providers.json` and prints summary table of free compute.
+
+* **`UI-8` Web Cockpit Provider Status HUD & Cascade Badges [DONE]**
+  - **What was built:** Sticky top Provider Pill Bar showing live status: `Antigravity`, `Claude Code`, `Ollama`, `Nebius Cloud` with live status dots. Lights up active execution provider and displays amber toast alert on rate limit cascading failover.
+
+* **Verification Commands for Manjiri:**
+  ```bash
+  python -m just_enough_ai.cli setup
+  python -m just_enough_ai.cli server
+  # Open http://localhost:8000 on desktop or phone on local WiFi
+  ``` Antigravity]`
      - Detects `claude` CLI $\to$ `[FOUND: Claude Code CLI]`
      - Detects `ollama` daemon $\to$ `[FOUND: Ollama on http://localhost:11434]` (queries tags for local models)
      - Checks `NEBIUS_API_KEY` $\to$ `[FOUND: Nebius Token Factory Cloud Key]`

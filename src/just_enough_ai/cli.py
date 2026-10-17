@@ -1,6 +1,10 @@
-"""CLI interface for Just-Enough-AI using Typer and Rich."""
-
+import json
+import os
+import sys
+import shutil
+from pathlib import Path
 from typing import Optional
+import httpx
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -48,6 +52,110 @@ def _parse_mode(mode_str: str) -> ExecutionMode:
 def version():
     """Show current version."""
     console.print(f"[bold green]{__app_name__}[/bold green] v{__version__}")
+
+
+@app.command()
+def setup():
+    """Auto-detect installed agentic IDEs, local Ollama, and Nebius Token Factory credentials (UI-7)."""
+    console.print("\n[bold cyan][JEAI] Running Just-Enough-AI Auto-Detection Wizard...[/bold cyan]\n")
+
+    detected = {}
+
+    # 1. Antigravity CLI check
+    agy_path = shutil.which("agy")
+    if not agy_path and sys.platform == "win32":
+        local_app_data = os.environ.get("LOCALAPPDATA", "")
+        candidates = [
+            Path(local_app_data) / "Programs" / "antigravity" / "agy.exe",
+            Path(local_app_data) / "antigravity" / "bin" / "agy.exe",
+        ]
+        for c in candidates:
+            if c.exists():
+                agy_path = str(c)
+                break
+    detected["antigravity"] = {
+        "name": "Google Antigravity",
+        "type": "IDE CLI Subshell",
+        "found": bool(agy_path),
+        "path": agy_path or "Not found in PATH",
+        "cost": "$0.00 (Free Tier)",
+    }
+
+    # 2. Claude Code CLI check
+    claude_path = shutil.which("claude")
+    detected["claude_code"] = {
+        "name": "Claude Code CLI",
+        "type": "PTY Process Adapter",
+        "found": bool(claude_path),
+        "path": claude_path or "Not found in PATH",
+        "cost": "$0.00 (Free Tier)",
+    }
+
+    # 3. Ollama local daemon check
+    ollama_models = []
+    ollama_active = False
+    try:
+        res = httpx.get("http://localhost:11434/api/tags", timeout=1.0)
+        if res.status_code == 200:
+            ollama_active = True
+            data = res.json()
+            ollama_models = [m.get("name") for m in data.get("models", [])]
+    except Exception:
+        ollama_active = False
+
+    detected["ollama"] = {
+        "name": "Ollama Local Daemon",
+        "type": "Local HTTP (localhost:11434)",
+        "found": ollama_active,
+        "path": f"{len(ollama_models)} models loaded" if ollama_active else "Daemon offline",
+        "cost": "$0.00 (Local VRAM)",
+    }
+
+    # 4. Nebius Token Factory cloud credentials check
+    has_nebius = bool(settings.nebius_api_key and not settings.mock_mode)
+    detected["nebius"] = {
+        "name": "Nebius Token Factory",
+        "type": "NVIDIA Nemotron Cloud",
+        "found": has_nebius,
+        "path": "API Key Configured" if has_nebius else "Mock Mode Active",
+        "cost": "$0.15 - $1.80 / 1M",
+    }
+
+    # Display Rich Table
+    table = Table(title="Discovered Compute & Inference Providers")
+    table.add_column("Provider / Tool", style="bold")
+    table.add_column("Adapter Type", style="dim")
+    table.add_column("Status", style="cyan")
+    table.add_column("Cost / 1M Tokens", style="green")
+    table.add_column("Location / Detail", style="yellow")
+
+    free_tier_count = 0
+    for key, p in detected.items():
+        status_str = "[green][ACTIVE][/green]" if p["found"] else "[yellow][OFFLINE][/yellow]"
+        if p["found"] and "$0.00" in p["cost"]:
+            free_tier_count += 1
+        table.add_row(p["name"], p["type"], status_str, p["cost"], str(p["path"]))
+
+    console.print(table)
+
+    # Save to ~/.jeai/providers.json
+    jeai_dir = Path.home() / ".jeai"
+    jeai_dir.mkdir(parents=True, exist_ok=True)
+    config_file = jeai_dir / "providers.json"
+
+    config_payload = {
+        "version": "1.0",
+        "providers": {k: {"enabled": v["found"], "path": v["path"]} for k, v in detected.items()},
+        "priority": ["ollama", "antigravity", "claude_code", "nebius"],
+    }
+    config_file.write_text(json.dumps(config_payload, indent=2), encoding="utf-8")
+
+    console.print(Panel(
+        f"[bold green]Configuration saved to:[/bold green] {config_file}\n"
+        f"[bold cyan]Free Inference Backends Discovered:[/bold cyan] {free_tier_count}\n"
+        f"[dim]Just-Enough-AI will prioritize discovered zero-cost tools and cascade to Nebius on rate limits.[/dim]",
+        title="Setup Completed Successfully", border_style="green",
+    ))
 
 
 @app.command()
@@ -129,18 +237,29 @@ def run(
     mode: str = typer.Option("local", "--mode", "-m", help="Execution mode: 'local' or 'remote'"),
     tier: Optional[str] = typer.Option(None, "--tier", "-t", help="Force specific tier: nano, super, ultra"),
 ):
-    """Route and execute a coding task on Nebius Token Factory."""
+    """Route and execute a coding task on Nebius Token Factory with Rich streaming polish (UI-6)."""
     exec_mode = _parse_mode(mode)
     forced_tier = _parse_tier(tier)
 
-    headroom = get_gpu_headroom()
-    memory = query_codebase_memory(task)
-    decision = determine_route(task, headroom, memory, mode=exec_mode, force_tier=forced_tier)
+    with console.status("[bold cyan]Evaluating codebase memory and VRAM headroom...[/bold cyan]", spinner="dots"):
+        headroom = get_gpu_headroom()
+        memory = query_codebase_memory(task)
+        decision = determine_route(task, headroom, memory, mode=exec_mode, force_tier=forced_tier)
 
     mode_str = "[yellow]MOCK MODE[/yellow]" if settings.mock_mode or not settings.nebius_api_key else "[green]LIVE NEBIUS[/green]"
     console.print(f"Executing via {mode_str} [{exec_mode.value.upper()}] using [bold]{decision.model_id}[/bold] ({decision.selected_tier.value.upper()})\n")
 
-    for chunk in run_task(task, decision):
+    with console.status(f"[bold green]Connecting to Nemotron {decision.selected_tier.value.upper()} stream...[/bold green]", spinner="dots"):
+        stream_iter = run_task(task, decision)
+        first_chunk = next(stream_iter, None)
+
+    if first_chunk:
+        if isinstance(first_chunk, RunMetadata):
+            pass
+        else:
+            console.print(first_chunk, end="")
+
+    for chunk in stream_iter:
         if isinstance(chunk, RunMetadata):
             console.print()
             console.print(Panel(
@@ -267,6 +386,18 @@ def loop(
                 f"[bold]Elapsed Latency:[/bold] {event.latency_ms:.0f}ms",
                 title="Agent Loop Completed", border_style="green",
             ))
+
+
+@app.command()
+def server(
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host address to bind"),
+    port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
+):
+    """Launch headless FastAPI backend with Mobile-First Web Cockpit."""
+    import uvicorn
+    console.print(f"[bold green]Starting Just-Enough-AI Cockpit on http://localhost:{port}[/bold green]")
+    console.print("[dim]Access this address from your smartphone browser for Laptop-OFF coding.[/dim]\n")
+    uvicorn.run("just_enough_ai.server:app", host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

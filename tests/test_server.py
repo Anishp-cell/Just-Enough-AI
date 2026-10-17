@@ -126,3 +126,26 @@ def test_api_commit_success():
             scratch_file.unlink()
 
 
+def test_api_file_content():
+    res = client.get("/api/file-content?path=README.md")
+    assert res.status_code == 200
+    data = res.json()
+    assert "content" in data
+    assert "Just-Enough-AI" in data["content"]
+    assert data["path"] == "README.md"
+
+
+def test_api_file_content_traversal_blocked():
+    res = client.get("/api/file-content?path=../../etc/passwd")
+    assert res.status_code == 400
+
+
+def test_api_manifest():
+    res = client.get("/manifest.json")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["name"] == "Just-Enough-AI Cockpit"
+    assert data["display"] == "standalone"
+
+
+
