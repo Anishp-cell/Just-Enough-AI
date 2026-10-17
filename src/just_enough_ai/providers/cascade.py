@@ -129,6 +129,7 @@ class CascadingProviderRouter:
                 })
                 response.raw_metadata["cascade_history"] = cascade_history
                 response.raw_metadata["active_provider"] = name
+                response.raw_metadata["provider"] = name
 
                 if len(cascade_history) > 1:
                     logger.warning(
@@ -178,6 +179,10 @@ class CascadingProviderRouter:
             return asyncio.run(
                 self.dispatch(prompt, tier, system_prompt, files_context, preferred_provider)
             )
+
+    # Convenient aliases matching ProviderAdapter interface
+    generate = dispatch
+    generate_sync = dispatch_sync
 
 
 # Global singleton router
