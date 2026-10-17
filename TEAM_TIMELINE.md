@@ -11,9 +11,9 @@
 
 | Teammate | Strategic Role | Tasks Completed | In Progress | Pending | Overall % | Current Status |
 |---|---|:---:|:---:|:---:|:---:|---|
-| **Lead (You)** | The Brain & Systems Architect | 11 / 16 | 0 | 5 | **69%** | 🟢 Phase 1 Live; Phase 2 (Universal Meta-Harness & Adapters) assigned (`L-12` to `L-16`) |
+| **Lead (You)** | The Brain & Systems Architect | 16 / 16 | 0 | 0 | **100%** | 🟢 Complete (Phase 1 core & Phase 2 Universal Provider Engine L-1 to L-16 verified ✅) |
 | **Mayank** | The Sentinel (Cybersecurity Lead) | 7 / 7 | 0 | 0 | **100%** | 🟢 Complete (M-1 to M-7 implemented & verified with 35 passing tests) |
-| **Manjiri** | The Interface & Client Integration | 0 / 8 | 0 | 8 | **0%** | 🟡 Ready to start (`UI-1` to `UI-8` including `jeai setup` & Provider HUD) |
+| **Manjiri** | The Interface & Client Integration | 0 / 8 | 0 | 8 | **0%** | 🟡 Ready to start (`UI-1` to `UI-8` unblocked with `/api/providers` & `/api/commit` live) |
 | **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 5 | 0 | 4 | **20%** | 🟡 Ready to execute (`D-2` to `D-5` including multi-provider benchmarks) |
 
 ---
@@ -99,7 +99,7 @@ sequenceDiagram
 ### 🧠 Workstream 1: Lead — The Brain & Systems Architect
 **Owner:** Lead  
 **Scope:** Core router, telemetry, KV-cache governor, speculative drafting, SteerLM PR gate, and FastAPI backend.  
-**Status:** **11 / 16 Tasks Completed (Phase 1: 100% Complete; Phase 2 Universal Provider Engine: In Progress)**
+**Status:** **16 / 16 Tasks Completed (100% Verified ✅)**
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -156,71 +156,28 @@ sequenceDiagram
     $$\text{Gate Score} = 0.40 \cdot \mathcal{C} + 0.30 \cdot (1 - \mathcal{R}) + 0.20 \cdot \mathcal{S} + 0.10 \cdot \mathcal{V}$$
     Evaluates Correctness, Regression Risk, Security, and Conciseness.
 
-* **`L-12` Abstract `ProviderAdapter` Interface & Registry (`src/just_enough_ai/providers/base.py`, `registry.py`) [PENDING]** ⭐ [Breakthrough #5]
-  - **Goal:** Define universal polymorphic interface and dynamic registry so any inference backend (REST API, local Ollama, or headless CLI IDE) can be plugged into the harness seamlessly.
-  - **Abstract Methods to Define:**
-    ```python
-    class ProviderAdapter(ABC):
-        @abstractmethod
-        async def generate(self, prompt: str, system_prompt: Optional[str] = None, files_context: Optional[Dict[str, str]] = None) -> ProviderResponse: ...
-        @abstractmethod
-        def is_available(self) -> bool: ...
-        @abstractmethod
-        def get_model_name(self) -> str: ...
-        @abstractmethod
-        def get_estimated_tier(self) -> ModelTier: ...
-        @abstractmethod
-        def get_rate_limit_status(self) -> RateLimitStatus: ...
-        @abstractmethod
-        def shutdown(self) -> None: ...
-    ```
-  - **Schemas:**
-    ```python
-    @dataclass
-    class ProviderResponse:
-        text: str
-        model_name: str
-        cost_usd: float
-        latency_ms: float
-        is_free_tier: bool
-        raw_metadata: Dict[str, Any]
+* **`L-12` Abstract `ProviderAdapter` Interface & Registry (`src/just_enough_ai/providers/base.py`, `registry.py`) [DONE]** ⭐ [Breakthrough #5]
+  - **What was built:** Defined universal polymorphic `ProviderAdapter` interface (`generate`, `is_available`, `get_model_name`, `get_estimated_tier`, `get_rate_limit_status`, `shutdown`) and `ProviderRegistry` managing prioritized discovery.
+  - **Schemas:** Strongly typed `ProviderResponse` and `RateLimitStatus` dataclasses.
 
-    @dataclass
-    class RateLimitStatus:
-        has_capacity: bool
-        retry_after_seconds: Optional[float] = None
-    ```
-  - **Registry:** `ProviderRegistry` class managing registration, initialization, and auto-discovery of available adapters.
+* **`L-13` Direct HTTP Adapters: `NebiusDirectAdapter` & `OllamaLocalAdapter` (`src/just_enough_ai/providers/nebius.py`, `ollama.py`) [DONE]**
+  - **What was built:**
+    - `NebiusDirectAdapter`: Connects to `https://api.tokenfactory.nebius.com/v1` for Nemotron Nano, Super, Ultra with exact token cost accounting and deterministic mock fallback.
+    - `OllamaLocalAdapter`: Connects to local Ollama daemon at `http://localhost:11434/api/generate`. Detects installed local models (`nemotron-mini`, `qwen2.5-coder`). Incurs exactly $0.00 token cost (100% free offline tier).
 
-* **`L-13` Direct HTTP Adapters: `NebiusDirectAdapter` & `OllamaLocalAdapter` (`src/just_enough_ai/providers/nebius.py`, `ollama.py`) [PENDING]**
-  - **NebiusDirectAdapter:** Refactors `agent/runner.py` into a standardized adapter implementing `ProviderAdapter`. Connects to `https://api.tokenfactory.nebius.com/v1` for Nemotron Nano, Super, Ultra with exact token cost accounting and deterministic mock fallback.
-  - **OllamaLocalAdapter:** Connects to local Ollama daemon at `http://localhost:11434/api/generate`. Detects installed local models (`nemotron-mini`, `qwen2.5-coder`, `llama3.2`). Checks availability via `/api/tags`. Incurs exactly $0.00 token cost.
+* **`L-14` Google Antigravity Headless CLI Adapter (`src/just_enough_ai/providers/antigravity.py`) [DONE]**
+  - **What was built:** Detects `agy` binary across system PATH and default directories, executes headless tasks via `run_provider_cli`, strips ANSI sequences, parses markdown code fences, and returns clean $0.00 free-tier `ProviderResponse`. Includes automatic backoff on 429 quota exhaustion.
 
-* **`L-14` Google Antigravity Headless CLI Adapter (`src/just_enough_ai/providers/antigravity.py`) [PENDING]**
-  - **Goal:** Enable developers with Antigravity installed to utilize its underlying free-tier model for drafting and refactoring without a paid API key.
-  - **Implementation Flow:**
-    1. Check for `agy` binary in PATH or `C:\Users\<user>\.gemini\antigravity-ide`.
-    2. Dispatch headless task invocation passing the prompt and workspace path.
-    3. Monitor task completion or read generated markdown/code artifacts from Antigravity's artifact store (`brain/<conversation-id>/`).
-    4. Normalize extracted code solution into standard `ProviderResponse`.
+* **`L-15` Claude Code CLI PTY Adapter (`src/just_enough_ai/providers/claude_code.py`) [DONE]**
+  - **What was built:** Spawns `claude` CLI with `-p` and `--dangerously-skip-permissions` to suppress interactive prompts, sanitizes terminal escape sequences with Mayank's `strip_ansi_sequences`, extracts code blocks, and detects usage limits.
 
-* **`L-15` Claude Code CLI PTY Adapter (`src/just_enough_ai/providers/claude_code.py`) [PENDING]**
-  - **Goal:** Enable developers with Claude Code CLI installed to leverage its free tier as an in-harness provider.
-  - **Implementation Flow:**
-    1. Check `shutil.which("claude")`.
-    2. Spawn subprocess with `--print` / non-interactive flags or run inside a pseudo-terminal (PTY) with `--dangerously-skip-permissions` to suppress interactive prompts.
-    3. Pipe output through Mayank's `strip_ansi` to eliminate terminal cursor codes.
-    4. Extract clean code patch and return `ProviderResponse`.
+* **`L-16` Zero-Cost Cascading Failover Router (`src/just_enough_ai/providers/cascade.py`) [DONE]**
+  - **What was built:** Implements `CascadingProviderRouter`: evaluates Tier 0 (Ollama) $\to$ Tier 1 (Antigravity/Claude Code) $\to$ Tier 2 (Nebius Cloud). When any provider hits rate limits or crashes, seamlessly waterfalls to the next provider with full cascade telemetry in `raw_metadata["cascade_history"]`.
 
-* **`L-16` Zero-Cost Cascading Failover Router (`src/just_enough_ai/providers/cascade.py`) [PENDING]**
-  - **Goal:** Orchestrate zero-cost waterfall routing and automatic failover.
-  - **Routing Waterfall Logic:**
-    1. For simple/draft tasks, attempt **Tier 0 (Ollama Local)** first if local GPU headroom permits ($0.00).
-    2. If Ollama is unavailable or ungrounded, attempt **Tier 1 (Antigravity CLI or Claude Code CLI)** ($0.00 free tier).
-    3. If a Tier 1 provider returns HTTP 429 (`RateLimitError`), hits session limit, or times out:
-       - Log structured warning: `[CASCADE_FAILOVER] Provider '{name}' rate limited. Cascading to Nebius Token Factory...`
-       - Seamlessly dispatch to **Tier 2 (Nebius Cloud Nemotron Nano $0.15/1M or Super $0.375/1M)**.
-    4. Ensure the developer's agent loop never crashes or halts due to a provider-specific rate limit.
+* **Verification Command for Lead:**
+  ```bash
+  uv run pytest tests/test_providers.py -v
+  ```
 
 ---
 

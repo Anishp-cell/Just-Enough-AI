@@ -1,5 +1,6 @@
 """Tests for FastAPI backend server endpoints."""
 
+from pathlib import Path
 from fastapi.testclient import TestClient
 from just_enough_ai.server import app
 
@@ -84,4 +85,44 @@ def test_api_loop_sse_stream():
     assert "data: [EVENT]" in body
     assert "data: [METADATA]" in body
     assert "data: [DONE]" in body
+
+
+def test_api_providers():
+    res = client.get("/api/providers")
+    assert res.status_code == 200
+    data = res.json()
+    assert "providers" in data
+    assert len(data["providers"]) >= 1
+    names = [p["name"] for p in data["providers"]]
+    assert "nebius" in names
+
+
+def test_api_commit_path_traversal_blocked():
+    res = client.post(
+        "/api/commit",
+        json={"file_path": "../../evil.py", "content": "print(1)"},
+    )
+    assert res.status_code == 400
+
+
+def test_api_commit_success():
+    scratch_file = Path("tests/scratch_commit_test.py")
+    try:
+        res = client.post(
+            "/api/commit",
+            json={
+                "file_path": str(scratch_file),
+                "content": "def hello(): return 'world'",
+                "do_git_commit": False,
+            },
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert scratch_file.exists()
+        assert scratch_file.read_text(encoding="utf-8") == "def hello(): return 'world'"
+    finally:
+        if scratch_file.exists():
+            scratch_file.unlink()
+
 

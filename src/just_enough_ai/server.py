@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
@@ -142,6 +142,62 @@ def api_files(root: str = Query(default=".")):
         if path.is_file():
             files.append(str(path.relative_to(root_path)).replace("\\", "/"))
     return {"root": str(root_path), "files": sorted(files)}
+
+
+@app.get("/api/providers")
+def api_providers():
+    """List all registered providers, their availability, tier, and rate limit status."""
+    from .providers import provider_registry
+    if not provider_registry.list_providers():
+        provider_registry.auto_discover()
+
+    results = []
+    for name, adapter in provider_registry.get_available_providers():
+        status = adapter.get_rate_limit_status()
+        results.append({
+            "name": name,
+            "model_name": adapter.get_model_name(),
+            "tier": adapter.get_estimated_tier().value,
+            "is_available": adapter.is_available(),
+            "has_capacity": status.has_capacity,
+            "is_free_tier": name in {"ollama", "antigravity", "claude_code"},
+        })
+    return {"providers": results}
+
+
+class CommitRequest(BaseModel):
+    file_path: str
+    content: str
+    commit_message: str = "Applied verified patch via Just-Enough-AI"
+    do_git_commit: bool = True
+
+
+@app.post("/api/commit")
+def api_commit(req: CommitRequest):
+    """Write verified code to file and record git commit."""
+    from .agent.sandbox import validate_safe_path
+    if not validate_safe_path(req.file_path, "."):
+        raise HTTPException(status_code=400, detail="Path traversal outside project root is prohibited.")
+
+    target = Path(req.file_path).resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(req.content, encoding="utf-8")
+
+    if not req.do_git_commit:
+        return {"success": True, "message": f"File {target.name} written without git commit."}
+
+    import subprocess
+    try:
+        subprocess.run(["git", "add", str(target)], check=True, capture_output=True)
+        res = subprocess.run(
+            ["git", "commit", "-m", req.commit_message],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return {"success": True, "message": f"Committed {target.name}", "git_output": res.stdout.strip()}
+    except Exception as e:
+        return {"success": True, "message": f"File {target.name} saved (git commit skipped: {e})"}
 
 
 @app.get("/")
