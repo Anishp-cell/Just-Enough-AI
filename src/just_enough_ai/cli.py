@@ -1,3 +1,5 @@
+"""CLI interface for Just-Enough-AI using Typer and Rich."""
+
 import json
 import os
 import sys
@@ -9,6 +11,15 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+
+# Reconfigure stdout to UTF-8 on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+console = Console(legacy_windows=False)
 
 from .models import ExecutionMode, ModelTier, RunMetadata
 from .profiler import get_gpu_headroom, assess_kv_headroom, NEMOTRON_SPECS
@@ -23,7 +34,6 @@ app = typer.Typer(
     help="Just-Enough-AI: Memory-aware, hardware-headroom cost-tiered agentic coding harness.",
     add_completion=False,
 )
-console = Console()
 
 
 def _parse_tier(tier_str: Optional[str]) -> Optional[ModelTier]:
@@ -246,7 +256,8 @@ def run(
         memory = query_codebase_memory(task)
         decision = determine_route(task, headroom, memory, mode=exec_mode, force_tier=forced_tier)
 
-    mode_str = "[yellow]MOCK MODE[/yellow]" if settings.mock_mode or not settings.nebius_api_key else "[green]LIVE NEBIUS[/green]"
+    has_key = bool(settings.nebius_api_key or settings.nvidia_api_key)
+    mode_str = "[yellow]MOCK MODE[/yellow]" if settings.mock_mode or not has_key else "[green]LIVE CLOUD (NVIDIA/NEBIUS)[/green]"
     console.print(f"Executing via {mode_str} [{exec_mode.value.upper()}] using [bold]{decision.model_id}[/bold] ({decision.selected_tier.value.upper()})\n")
 
     with console.status(f"[bold green]Connecting to Nemotron {decision.selected_tier.value.upper()} stream...[/bold green]", spinner="dots"):

@@ -10,9 +10,11 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # Nebius Token Factory
+    # Nebius Token Factory & NVIDIA NIM
     nebius_api_key: Optional[str] = Field(default=None, alias="NEBIUS_API_KEY")
     nebius_base_url: str = Field(default="https://api.studio.nebius.ai/v1", alias="NEBIUS_BASE_URL")
+    nvidia_api_key: Optional[str] = Field(default=None, alias="NVIDIA_API_KEY")
+    nvidia_base_url: str = Field(default="https://integrate.api.nvidia.com/v1", alias="NVIDIA_BASE_URL")
 
     # Model Tiers
     model_nano: str = Field(default="nvidia/nemotron-3-nano-omni", alias="MODEL_NANO")

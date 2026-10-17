@@ -32,10 +32,10 @@ class NebiusDirectAdapter(ProviderAdapter):
         self._rate_limited_until: float = 0.0
 
     def is_available(self) -> bool:
-        """Available if mock mode is on or NEBIUS_API_KEY is configured."""
+        """Available if mock mode is on or an API key is configured."""
         if settings.mock_mode:
             return True
-        return bool(settings.nebius_api_key)
+        return bool(settings.nebius_api_key or settings.nvidia_api_key)
 
     def get_model_name(self) -> str:
         return self.model_id
@@ -75,8 +75,17 @@ class NebiusDirectAdapter(ProviderAdapter):
             )
             full_prompt = f"FILES CONTEXT:\n{context_blocks}\n\nTASK:\n{prompt}"
 
+        # Resolve active API key and base URL
+        api_key = settings.nebius_api_key or settings.nvidia_api_key
+        base_url = settings.nebius_base_url
+        if api_key and (api_key.startswith("nvapi-") or not settings.nebius_api_key):
+            base_url = settings.nvidia_base_url
+            # For NVIDIA NIM, nemotron-3-nano maps to nemotron-3-nano-omni-30b-a3b-reasoning or mistral-nemo
+            if self.model_id == "nvidia/nemotron-3-nano-omni":
+                self.model_id = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+
         # ── Mock Mode Fallback ───────────────────────────────────────────────
-        if settings.mock_mode or not settings.nebius_api_key:
+        if settings.mock_mode or not api_key:
             time.sleep(0.05)  # Simulate network latency
             completion_text = get_mock_completion(full_prompt, self.tier)
             latency = (time.monotonic() * 1000) - start_ms
@@ -98,12 +107,12 @@ class NebiusDirectAdapter(ProviderAdapter):
                 },
             )
 
-        # ── Live Nebius Token Factory Call ──────────────────────────────────
+        # ── Live Cloud Inference Call (Nebius / NVIDIA NIM) ──────────────────
         try:
             from openai import OpenAI
             client = OpenAI(
-                base_url=settings.nebius_base_url,
-                api_key=settings.nebius_api_key,
+                base_url=base_url,
+                api_key=api_key,
             )
 
             sys_content = system_prompt or (
@@ -121,7 +130,8 @@ class NebiusDirectAdapter(ProviderAdapter):
                 max_tokens=2048,
             )
 
-            text = response.choices[0].message.content or ""
+            msg = response.choices[0].message
+            text = msg.content or getattr(msg, "reasoning_content", None) or ""
             latency = (time.monotonic() * 1000) - start_ms
 
             prompt_tokens = response.usage.prompt_tokens if response.usage else len(full_prompt.split()) * 2

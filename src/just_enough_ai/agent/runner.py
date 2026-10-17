@@ -21,16 +21,19 @@ def run_task(
     Yields:
         str chunks during streaming inference.
         RunMetadata as the final item after the stream ends.
-
-    Falls back to mock mode if MOCK_MODE=True or NEBIUS_API_KEY is not set.
     """
-    if settings.mock_mode or not settings.nebius_api_key:
+    api_key = settings.nebius_api_key or settings.nvidia_api_key
+    base_url = settings.nebius_base_url
+    if api_key and (api_key.startswith("nvapi-") or not settings.nebius_api_key):
+        base_url = settings.nvidia_base_url
+
+    if settings.mock_mode or not api_key:
         yield from run_mock_task(task_description, decision)
         return
 
     client = OpenAI(
-        base_url=settings.nebius_base_url,
-        api_key=settings.nebius_api_key,
+        base_url=base_url,
+        api_key=api_key,
     )
 
     system_prompt = (
