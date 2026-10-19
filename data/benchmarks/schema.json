@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JustEnoughAIBenchmarkSuite",
+  "description": "Schema definition for Just-Enough-AI benchmark task dataset.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "description",
+    "total_tasks",
+    "tier_distribution",
+    "tasks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "total_tasks": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tier_distribution": {
+      "type": "object",
+      "required": ["nano", "super", "ultra"],
+      "properties": {
+        "nano": { "type": "integer" },
+        "super": { "type": "integer" },
+        "ultra": { "type": "integer" }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "prompt",
+          "expected_tier",
+          "difficulty",
+          "category",
+          "description",
+          "expected_behavior",
+          "evaluation_criteria"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 5
+          },
+          "expected_tier": {
+            "type": "string",
+            "enum": ["nano", "super", "ultra"]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": ["simple", "moderate", "complex"]
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected_behavior": {
+            "type": "string"
+          },
+          "evaluation_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

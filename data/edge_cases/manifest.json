@@ -1,0 +1,172 @@
+{
+  "version": "1.0",
+  "description": "Corpus of 15 challenging coding edge cases for verifying agent code generation correctness and adversarial robustness under Mayank's security fuzzer and SteerLM PR gate.",
+  "total_cases": 15,
+  "edge_cases": [
+    {
+      "case_id": "EC-001",
+      "file": "case_01_off_by_one.py",
+      "name": "off_by_one_boundary",
+      "category": "boundary_condition",
+      "vulnerability_type": "IndexError / Infinite Loop",
+      "trigger_input": "Empty list [] or single-element target at boundary",
+      "expected_exception": "IndexError",
+      "description": "Binary search using while low < high instead of <= and mid calculation that overflows or misses last element.",
+      "remediation": "Use while low <= high and handle empty sequence guard at entry."
+    },
+    {
+      "case_id": "EC-002",
+      "file": "case_02_missing_null_check.py",
+      "name": "missing_null_check",
+      "category": "null_pointer_trap",
+      "vulnerability_type": "TypeError / AttributeError",
+      "trigger_input": "payload = None or payload = {'user': None}",
+      "expected_exception": "TypeError",
+      "description": "Accessing nested dictionary keys directly assuming intermediate dictionaries are never None.",
+      "remediation": "Use safe traversal helper or explicit isinstance/None validation on each tier."
+    },
+    {
+      "case_id": "EC-003",
+      "file": "case_03_zero_division.py",
+      "name": "zero_division_guard",
+      "category": "numeric_robustness",
+      "vulnerability_type": "ZeroDivisionError",
+      "trigger_input": "values = [] or weights sum to 0 or total_count = 0",
+      "expected_exception": "ZeroDivisionError",
+      "description": "Calculating weighted mean or percentage without checking if denominator is zero or empty.",
+      "remediation": "Guard against zero sum/length explicitly, returning fallback default (0.0) or raising ValueError."
+    },
+    {
+      "case_id": "EC-004",
+      "file": "case_04_int_overflow_recursion.py",
+      "name": "unbounded_recursion_depth",
+      "category": "resource_exhaustion",
+      "vulnerability_type": "RecursionError",
+      "trigger_input": "Circular references or deeply nested structures (depth > 1000)",
+      "expected_exception": "RecursionError",
+      "description": "Recursive tree traversal without visited-set cycle detection or maximum depth bound.",
+      "remediation": "Use an explicit iterative stack with a visited identity set and hard maximum depth limit."
+    },
+    {
+      "case_id": "EC-005",
+      "file": "case_05_unhandled_unicode_null.py",
+      "name": "embedded_null_byte_unicode",
+      "category": "string_sanitization",
+      "vulnerability_type": "ValueError / UnicodeDecodeError",
+      "trigger_input": "raw_input = 'config\\x00.json' or invalid surrogate pairs",
+      "expected_exception": "ValueError",
+      "description": "Processing filenames or identifiers without stripping embedded null bytes (\\x00).",
+      "remediation": "Strip null bytes and control characters, validate against allowed character set."
+    },
+    {
+      "case_id": "EC-006",
+      "file": "case_06_floating_point_precision.py",
+      "name": "floating_point_equality",
+      "category": "numerical_precision",
+      "vulnerability_type": "AssertionError / False Logic Branch",
+      "trigger_input": "0.1 + 0.2 vs 0.3 or float ledger balances",
+      "expected_exception": "AssertionError",
+      "description": "Comparing floating point numbers directly using == in financial or threshold checks.",
+      "remediation": "Use math.isclose() with relative/absolute tolerance, or integer cents / Decimal."
+    },
+    {
+      "case_id": "EC-007",
+      "file": "case_07_mutable_default_argument.py",
+      "name": "mutable_default_argument",
+      "category": "state_leak",
+      "vulnerability_type": "Data Pollution / Cross-Request State Leak",
+      "trigger_input": "Consecutive calls relying on default argument [] or {}",
+      "expected_exception": "AssertionError",
+      "description": "Using mutable containers (list, dict, set) as default parameter values.",
+      "remediation": "Set default to None and initialize a new container inside the function body."
+    },
+    {
+      "case_id": "EC-008",
+      "file": "case_08_regex_catastrophic_backtracking.py",
+      "name": "regex_catastrophic_backtracking",
+      "category": "algorithmic_complexity_redos",
+      "vulnerability_type": "CPU DoS / Timeout",
+      "trigger_input": "'a' * 25 + '!' against nested grouping regex (a+)+$",
+      "expected_exception": "TimeoutError",
+      "description": "Nested quantifiers without atomic grouping or input length pre-validation causing catastrophic backtracking.",
+      "remediation": "Simplify regex pattern, use possessive/atomic matching or pre-validate maximum string length."
+    },
+    {
+      "case_id": "EC-009",
+      "file": "case_09_dict_mutation_during_iteration.py",
+      "name": "dict_mutation_during_iteration",
+      "category": "iterator_invalidation",
+      "vulnerability_type": "RuntimeError",
+      "trigger_input": "Modifying or deleting dictionary keys inside a for loop over the dictionary",
+      "expected_exception": "RuntimeError",
+      "description": "Deleting keys directly from a dictionary while iterating over d.items() or d.keys().",
+      "remediation": "Iterate over a copy of keys list(d.keys()) or use dictionary comprehension."
+    },
+    {
+      "case_id": "EC-010",
+      "file": "case_10_shallow_vs_deep_copy.py",
+      "name": "shallow_vs_deep_copy",
+      "category": "state_isolation",
+      "vulnerability_type": "Corrupted Shared State / Side Effect",
+      "trigger_input": "Mutating nested dict/list in shallow copied configuration",
+      "expected_exception": "AssertionError",
+      "description": "Using dict.copy() or dict() on nested structures: nested objects remain shared references.",
+      "remediation": "Use copy.deepcopy() for nested state duplication or immutable data models."
+    },
+    {
+      "case_id": "EC-011",
+      "file": "case_11_unclosed_resource_leak.py",
+      "name": "unclosed_resource_leak",
+      "category": "resource_leak",
+      "vulnerability_type": "ResourceWarning / FD Leak",
+      "trigger_input": "Exceptions thrown before file.close() or socket.close()",
+      "expected_exception": "ResourceWarning",
+      "description": "Opening file or socket descriptors without using context managers (with statement).",
+      "remediation": "Always use with open(...) as f: context manager to ensure deterministic cleanup."
+    },
+    {
+      "case_id": "EC-012",
+      "file": "case_12_type_coercion_boolean_trap.py",
+      "name": "boolean_coercion_trap",
+      "category": "type_coercion",
+      "vulnerability_type": "Logic Bug / False Positive Flag",
+      "trigger_input": "env_val = 'false' or '0' evaluated via bool(env_val)",
+      "expected_exception": "AssertionError",
+      "description": "Calling bool(val) on strings: bool('false') and bool('0') are True in Python.",
+      "remediation": "Use explicit lookup dictionary mapping known true/false literals."
+    },
+    {
+      "case_id": "EC-013",
+      "file": "case_13_generator_exhaustion_reuse.py",
+      "name": "generator_exhaustion",
+      "category": "iterator_semantics",
+      "vulnerability_type": "ZeroDivisionError / Empty Iterator Silent Failure",
+      "trigger_input": "Passing a generator expression (x for x in data) to a two-pass algorithm",
+      "expected_exception": "ZeroDivisionError",
+      "description": "Iterating over an Iterable twice: if input is a generator, pass 2 sees empty elements.",
+      "remediation": "Convert to a list if bounded, or use itertools.tee() to clone the iterator."
+    },
+    {
+      "case_id": "EC-014",
+      "file": "case_14_unhandled_empty_iterable_min_max.py",
+      "name": "empty_iterable_min_max",
+      "category": "builtin_aggregators",
+      "vulnerability_type": "ValueError",
+      "trigger_input": "Empty list [] or generator where all items are filtered out",
+      "expected_exception": "ValueError",
+      "description": "Calling min() or max() on filtered iterables without specifying default argument.",
+      "remediation": "Always pass default=None or default value, or check sequence length beforehand."
+    },
+    {
+      "case_id": "EC-015",
+      "file": "case_15_datetime_timezone_naive_arithmetic.py",
+      "name": "timezone_naive_aware_collision",
+      "category": "datetime_safety",
+      "vulnerability_type": "TypeError",
+      "trigger_input": "Subtracting datetime.now() (naive) from datetime.now(timezone.utc) (aware)",
+      "expected_exception": "TypeError",
+      "description": "Subtracting timezone-naive datetime from timezone-aware datetime in session/token expiry checks.",
+      "remediation": "Always normalize timestamps to timezone-aware UTC before performing arithmetic."
+    }
+  ]
+}

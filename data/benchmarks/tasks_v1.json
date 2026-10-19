@@ -1,14 +1,27 @@
 {
   "schema_version": "1.0",
-  "description": "Initial benchmark evaluation suite for Just-Enough-AI routing precision.",
+  "description": "Curated benchmark evaluation suite for Just-Enough-AI routing precision, latency, and cost efficiency across Nemotron Nano, Super, and Ultra tiers.",
+  "total_tasks": 50,
+  "tier_distribution": {
+    "nano": 20,
+    "super": 20,
+    "ultra": 10
+  },
   "tasks": [
     {
       "id": "easy_001",
-      "prompt": "Add a docstring to: def add(a: int, b: int) -> int: return a + b",
+      "prompt": "Add a Google-style docstring to: def add(a: int, b: int) -> int: return a + b",
       "expected_tier": "nano",
       "difficulty": "simple",
       "category": "docstring",
-      "description": "Small self-contained function edit"
+      "description": "Small self-contained function documentation",
+      "expected_behavior": "Return the original function signature with a valid Google-style docstring documenting args, return types, and a concise summary.",
+      "evaluation_criteria": [
+        "Function syntax is valid Python",
+        "Docstring follows Google docstring conventions with Args and Returns sections",
+        "Type annotations (int, int -> int) are preserved unmodified",
+        "No side effects or out-of-scope edits introduced"
+      ]
     },
     {
       "id": "easy_002",
@@ -16,47 +29,717 @@
       "expected_tier": "nano",
       "difficulty": "simple",
       "category": "syntax_fix",
-      "description": "One-line syntax correction"
+      "description": "One-line syntax correction",
+      "expected_behavior": "Correct the unclosed parenthesis in the print statement to produce valid syntax print('hello world').",
+      "evaluation_criteria": [
+        "AST parseable with no SyntaxError",
+        "String content 'hello world' is preserved exactly",
+        "Closing parenthesis correctly matches opening parenthesis"
+      ]
     },
     {
       "id": "easy_003",
-      "prompt": "Write a pure function that reverses a list of strings",
+      "prompt": "Write a pure function reverse_strings(items: list[str]) -> list[str] that reverses a list of strings without mutating the input.",
       "expected_tier": "nano",
       "difficulty": "simple",
       "category": "utility",
-      "description": "Trivial standalone helper"
+      "description": "Trivial standalone sequence helper",
+      "expected_behavior": "Return a new list containing elements of items in reversed order, leaving items completely unmodified.",
+      "evaluation_criteria": [
+        "Function is pure with no mutation of input list",
+        "Returns correct reversed list for non-empty lists and empty list for []",
+        "Includes type hints list[str] -> list[str]"
+      ]
+    },
+    {
+      "id": "easy_004",
+      "prompt": "Write a function is_valid_email_basic(email: str) -> bool that checks if an email contains '@' and '.', with non-empty local-part and domain.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "validation",
+      "description": "Basic string validation helper",
+      "expected_behavior": "Return True if email has non-empty parts before '@', between '@' and '.', and after '.', else False.",
+      "evaluation_criteria": [
+        "Correctly returns True for 'user@domain.com'",
+        "Correctly returns False for missing '@', missing '.', or empty segments",
+        "Handles edge-case inputs like empty string or whitespace without crashing"
+      ]
+    },
+    {
+      "id": "easy_005",
+      "prompt": "Write a function format_usd_cents(cents: int) -> str that formats integer cents into a standard currency string (e.g. 1250 -> '$12.50', -50 -> '-$0.50').",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "formatter",
+      "description": "Financial string formatting utility",
+      "expected_behavior": "Accept an integer representing cents and format it into a dollar string with two decimal places, correctly handling negative numbers and zero.",
+      "evaluation_criteria": [
+        "Formats 1250 as '$12.50'",
+        "Formats 0 as '$0.00'",
+        "Formats negative cents like -50 as '-$0.50'",
+        "Validates that input is an integer or raises ValueError"
+      ]
+    },
+    {
+      "id": "easy_006",
+      "prompt": "Add comprehensive PEP 484 type annotations to: def flatten_dict(d, sep='.'): items = []; ... return dict(items)",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "typing",
+      "description": "Type annotation addition to existing utility",
+      "expected_behavior": "Annotate d: dict[str, Any], sep: str = '.', and return type dict[str, Any] using typing constructs.",
+      "evaluation_criteria": [
+        "Valid Python typing syntax (typing.Any, typing.Dict)",
+        "Original function implementation logic is preserved",
+        "Type annotations pass mypy or pyright static checks"
+      ]
+    },
+    {
+      "id": "easy_007",
+      "prompt": "Write a function slugify(text: str) -> str that converts arbitrary text into a lowercase, hyphen-separated, URL-safe slug stripped of special characters.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "utility",
+      "description": "URL slug generation utility",
+      "expected_behavior": "Strip punctuation, convert whitespace to single hyphens, convert to lowercase, and strip leading/trailing hyphens.",
+      "evaluation_criteria": [
+        "Converts 'Hello World!' to 'hello-world'",
+        "Collapses multiple spaces/hyphens into a single hyphen",
+        "Removes unsafe URL symbols (e.g. ?, !, @, #, $, %)",
+        "Handles empty string gracefully returning ''"
+      ]
+    },
+    {
+      "id": "easy_008",
+      "prompt": "Write a function clamp(val: float, min_val: float, max_val: float) -> float that clamps a number between min_val and max_val.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "math_helper",
+      "description": "Boundary clamp helper",
+      "expected_behavior": "Return min_val if val < min_val, max_val if val > max_val, else val. Raise ValueError if min_val > max_val.",
+      "evaluation_criteria": [
+        "Correctly clamps values outside boundaries",
+        "Leaves in-bounds values untouched",
+        "Validates min_val <= max_val invariant, raising ValueError if violated"
+      ]
+    },
+    {
+      "id": "easy_009",
+      "prompt": "Write a function is_palindrome(s: str) -> bool that checks if a string is a palindrome, ignoring case, whitespace, and non-alphanumeric characters.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "string_algo",
+      "description": "Case and punctuation insensitive palindrome checker",
+      "expected_behavior": "Filter to alphanumeric characters, lowercases them, and check if identical forwards and backwards.",
+      "evaluation_criteria": [
+        "Returns True for 'A man, a plan, a canal: Panama'",
+        "Returns False for 'race a car'",
+        "Returns True for empty or single character strings"
+      ]
+    },
+    {
+      "id": "easy_010",
+      "prompt": "Write a function get_utc_iso_timestamp() -> str that returns the current UTC timestamp formatted as ISO 8601 string ending in 'Z'.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "datetime",
+      "description": "ISO 8601 UTC timestamp generator",
+      "expected_behavior": "Use datetime.now(timezone.utc) to generate an ISO 8601 string formatted like '2026-10-18T18:30:00Z'.",
+      "evaluation_criteria": [
+        "Uses timezone-aware UTC datetime",
+        "Formats string correctly with 'Z' suffix",
+        "Does not use deprecated datetime.utcnow()"
+      ]
+    },
+    {
+      "id": "easy_011",
+      "prompt": "Write a function parse_host_port(address: str, default_port: int = 8080) -> tuple[str, int] that splits a 'host:port' string with fallback to default_port.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "parsing",
+      "description": "Network address string parser",
+      "expected_behavior": "Parse 'localhost:3000' -> ('localhost', 3000) and 'localhost' -> ('localhost', 8080). Raise ValueError on invalid port numbers.",
+      "evaluation_criteria": [
+        "Handles presence and absence of port delimiter",
+        "Converts port to integer and validates range 1 <= port <= 65535",
+        "Raises ValueError on non-numeric port strings"
+      ]
+    },
+    {
+      "id": "easy_012",
+      "prompt": "Write a function deduplicate_preserve_order(items: list) -> list that removes duplicates from a list while preserving the first appearance order.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "data_structure",
+      "description": "Order-preserving deduplication helper",
+      "expected_behavior": "Return unique elements in original encounter order using dict.fromkeys or a seen set.",
+      "evaluation_criteria": [
+        "Preserves original encounter order of elements",
+        "O(N) time complexity",
+        "Handles unhashable items or documents restriction"
+      ]
+    },
+    {
+      "id": "easy_013",
+      "prompt": "Write a function chunk_list(items: list, chunk_size: int) -> list[list] that divides a list into consecutive sublists of length chunk_size.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "utility",
+      "description": "List batching / chunking helper",
+      "expected_behavior": "Return a list of sublists where each sublist has length at most chunk_size. Raise ValueError if chunk_size <= 0.",
+      "evaluation_criteria": [
+        "Correctly chunks lists evenly and handles trailing remainder slice",
+        "Raises ValueError for non-positive chunk_size",
+        "Returns empty list when input list is empty"
+      ]
+    },
+    {
+      "id": "easy_014",
+      "prompt": "Write a function mask_card_number(pan: str) -> str that masks a 16-digit card number with '*' leaving only the first 4 and last 4 digits visible.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "security_masking",
+      "description": "Card / PAN number redaction utility",
+      "expected_behavior": "Accept a string of digits, strip dashes/spaces, and mask intermediate digits with '*' keeping first 4 and last 4 digits visible.",
+      "evaluation_criteria": [
+        "Masks '1234-5678-9012-3456' to '1234********3456'",
+        "Validates minimum digit length (>= 8 digits)",
+        "Never exposes full credential in return value"
+      ]
+    },
+    {
+      "id": "easy_015",
+      "prompt": "Write a function snake_to_camel(name: str, pascal: bool = False) -> str that converts snake_case identifiers to camelCase or PascalCase.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "string_algo",
+      "description": "Identifier case conversion helper",
+      "expected_behavior": "Convert 'my_variable_name' to 'myVariableName' (or 'MyVariableName' if pascal=True).",
+      "evaluation_criteria": [
+        "Converts lowercase snake_case words correctly",
+        "Respects the pascal boolean flag for leading character capitalization",
+        "Handles empty string and single-word strings cleanly"
+      ]
+    },
+    {
+      "id": "easy_016",
+      "prompt": "Write a function merge_dicts_shallow(d1: dict, d2: dict) -> dict that creates a new merged dictionary with keys in d2 overriding d1 without modifying inputs.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "data_structure",
+      "description": "Pure dictionary shallow merge helper",
+      "expected_behavior": "Return a new dict containing union of d1 and d2, with d2 values taking precedence on key collision. d1 and d2 must remain unchanged.",
+      "evaluation_criteria": [
+        "Neither d1 nor d2 is mutated",
+        "Collision resolution gives priority to d2",
+        "Works across empty dicts and populated dicts"
+      ]
+    },
+    {
+      "id": "easy_017",
+      "prompt": "Write a function sha256_hex(data: str) -> str that calculates the hexadecimal SHA-256 hash digest of a UTF-8 string.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "cryptography",
+      "description": "Cryptographic hash digest generator",
+      "expected_behavior": "Encode string as UTF-8 bytes and compute hashlib.sha256 digest returning 64-character lowercase hex string.",
+      "evaluation_criteria": [
+        "Produces valid 64-character hex digest",
+        "Matches known SHA-256 test vectors (e.g. empty string digest)",
+        "Correctly encodes UTF-8 multi-byte characters"
+      ]
+    },
+    {
+      "id": "easy_018",
+      "prompt": "Write a function parse_query_params(query_string: str) -> dict[str, str] that parses a URL query string 'k1=v1&k2=v2' into a dictionary.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "parsing",
+      "description": "URL query parameter parser",
+      "expected_behavior": "Parse key-value pairs separated by '&' and '=', decoding percent-encoded characters using urllib.parse.unquote.",
+      "evaluation_criteria": [
+        "Decodes percent-encoded characters (e.g. %20 -> space)",
+        "Ignores leading '?' if present",
+        "Handles keys without values or empty query string gracefully"
+      ]
+    },
+    {
+      "id": "easy_019",
+      "prompt": "Write a function calculate_percentage_change(old_val: float, new_val: float) -> float that calculates percentage change ((new - old) / old * 100), returning 0.0 if old_val is 0.0.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "math_helper",
+      "description": "Safe percentage delta calculator",
+      "expected_behavior": "Compute percentage change from old_val to new_val. Prevent ZeroDivisionError by returning 0.0 or specified sentinel when old_val == 0.0.",
+      "evaluation_criteria": [
+        "Accurately calculates positive and negative percentage changes",
+        "Zero division is guarded and does not raise exception",
+        "Rounds output to reasonable float precision"
+      ]
+    },
+    {
+      "id": "easy_020",
+      "prompt": "Write a function truncate_words(text: str, max_chars: int, suffix: str = '...') -> str that truncates text at a word boundary without cutting words in half.",
+      "expected_tier": "nano",
+      "difficulty": "simple",
+      "category": "string_algo",
+      "description": "Word-boundary-aware text truncation",
+      "expected_behavior": "Truncate text to at most max_chars including suffix length, ensuring the cut occurs at a whitespace word boundary.",
+      "evaluation_criteria": [
+        "Total length of result never exceeds max_chars",
+        "Does not split words in the middle",
+        "Returns original text unchanged if len(text) <= max_chars"
+      ]
     },
     {
       "id": "medium_001",
-      "prompt": "Refactor the authentication handler to support JWT Bearer token parsing with custom expiry validation and comprehensive unit tests.",
+      "prompt": "Refactor the authentication handler to support JWT Bearer token parsing with custom expiry validation, algorithm verification (HS256), and comprehensive unit tests.",
       "expected_tier": "super",
       "difficulty": "moderate",
-      "category": "refactor",
-      "description": "Multi-function logic update with edge conditions"
+      "category": "auth_refactor",
+      "description": "Multi-function authentication token validator",
+      "expected_behavior": "Implement JWT parsing, header validation, signature verification with secret, expiry claim (exp) verification with clock skew leeway, and unit tests.",
+      "evaluation_criteria": [
+        "Validates Bearer prefix in Authorization header",
+        "Checks signature and rejects tampered payloads",
+        "Enforces expiration time with configurable clock skew",
+        "Includes unit test cases for valid, expired, and malformed tokens"
+      ]
     },
     {
       "id": "medium_002",
-      "prompt": "Add an asynchronous retry decorator with exponential backoff and jitter for network requests.",
+      "prompt": "Implement an asynchronous retry decorator @async_retry(max_retries=3, base_delay=0.5, backoff_factor=2.0, exceptions=(Exception,)) with full jitter.",
       "expected_tier": "super",
       "difficulty": "moderate",
-      "category": "feature",
-      "description": "Async decorator pattern implementation"
+      "category": "async_decorator",
+      "description": "Asynchronous retry decorator with exponential backoff and jitter",
+      "expected_behavior": "Decorate coroutine functions to automatically catch specified exceptions, wait with exponential backoff and randomized jitter, and re-raise after exhausting retries.",
+      "evaluation_criteria": [
+        "Correctly decorates async coroutines with functools.wraps",
+        "Calculates exponential delay: delay = random.uniform(0, min(max_delay, base_delay * (factor ** attempt)))",
+        "Only catches specified exception tuples, letting others bubble up immediately",
+        "Preserves function signature and docstrings"
+      ]
+    },
+    {
+      "id": "medium_003",
+      "prompt": "Implement a thread-safe LRU Cache with TTL (Time-To-Live) expiration supporting get(key), put(key, val, ttl_seconds), and cleanup_expired() methods.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "caching",
+      "description": "Thread-safe LRU cache with item expiration",
+      "expected_behavior": "Maintain items in access order, evict least recently used when capacity is reached, expire items after TTL, protected by threading.RLock.",
+      "evaluation_criteria": [
+        "Thread-safe operations via locks",
+        "O(1) average time complexity for get and put using OrderedDict or doubly-linked list",
+        "Returns None or raises KeyError on expired keys",
+        "Proper eviction of LRU item when exceeding max_capacity"
+      ]
+    },
+    {
+      "id": "medium_004",
+      "prompt": "Write a complete pytest test suite with unittest.mock fixtures testing an HTTP WeatherApiClient for timeouts, 500 server errors, and payload decoding.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "testing",
+      "description": "Unit test suite with HTTP mocks and error cases",
+      "expected_behavior": "Mock httpx or requests calls to verify client handles 200 OK, 404 Not Found, 503 Service Unavailable, connection timeouts, and malformed JSON.",
+      "evaluation_criteria": [
+        "Uses pytest fixtures and unittest.mock.patch cleanly",
+        "Tests both happy path and failure/timeout scenarios",
+        "Verifies client custom exceptions are raised with informative error messages",
+        "Ensures no real network calls are made during tests"
+      ]
+    },
+    {
+      "id": "medium_005",
+      "prompt": "Implement a streaming multipart file upload processor that validates MIME types against an allowlist, enforces a 10MB limit, and writes chunks to disk safely.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "file_io",
+      "description": "Streaming multipart file validator and disk writer",
+      "expected_behavior": "Read chunks iteratively, track total bytes read, abort with 413 Payload Too Large if limit exceeded, and use atomic temporary file renaming on completion.",
+      "evaluation_criteria": [
+        "Streams chunks to prevent high memory usage on large files",
+        "Enforces strict byte size limit during streaming",
+        "Uses atomic file write pattern (writes to temp file, renames on success)",
+        "Cleans up partial temp files if an error or abort occurs"
+      ]
+    },
+    {
+      "id": "medium_006",
+      "prompt": "Implement a sliding-window log rate limiter class SlidingWindowRateLimiter(max_requests: int, window_seconds: float) with allow_request(client_id: str) -> bool.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "rate_limiting",
+      "description": "Sliding window log rate limiter",
+      "expected_behavior": "Record timestamps for each client request, prune timestamps outside current window, allow request if count <= max_requests, else return False with retry_after.",
+      "evaluation_criteria": [
+        "Accurately enforces rate limit across moving window boundaries",
+        "Prunes old timestamps to prevent unbounded memory growth",
+        "Thread-safe or async-safe concurrency controls",
+        "Provides accurate remaining capacity and retry-after calculation"
+      ]
+    },
+    {
+      "id": "medium_007",
+      "prompt": "Write a structured JSON logging ASGI middleware for FastAPI that captures request_id, method, path, client_ip, status_code, and latency_ms as a single JSON log line.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "middleware",
+      "description": "FastAPI ASGI structured logging middleware",
+      "expected_behavior": "Intercept incoming HTTP requests, extract or generate X-Request-ID, time the call_next coroutine, and log structured JSON with status and execution time.",
+      "evaluation_criteria": [
+        "Generates valid single-line JSON log entries",
+        "Measures accurate elapsed latency in milliseconds using high-res timer",
+        "Injects X-Request-ID into response headers",
+        "Captures unhandled exceptions and logs them with 500 status before re-raising"
+      ]
+    },
+    {
+      "id": "medium_008",
+      "prompt": "Implement a generic SQLAlchemy repository BaseRepository[T] with methods get_by_id, list_all, create, update, and delete, with automatic session rollback on error.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "persistence",
+      "description": "Generic database CRUD repository pattern",
+      "expected_behavior": "Abstract common database operations for declarative models, handling transactions and rollback upon database exceptions.",
+      "evaluation_criteria": [
+        "Uses generic type typing.TypeVar bound to SQLAlchemy Base model",
+        "Encapsulates commit and rollback in context manager or try/except",
+        "Raises custom EntityNotFoundError on missing records",
+        "Supports pagination (limit and offset) in list_all"
+      ]
+    },
+    {
+      "id": "medium_009",
+      "prompt": "Implement a worker pool queue consumer WorkerPool(num_workers: int) that processes tasks from an asyncio.Queue with graceful SIGTERM cancellation and drain timeout.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "concurrency",
+      "description": "Asynchronous worker pool with graceful shutdown",
+      "expected_behavior": "Spawn worker coroutines reading tasks from queue. On shutdown signal, stop accepting tasks, allow active workers to drain within timeout, and cancel stuck workers.",
+      "evaluation_criteria": [
+        "Spawns specified number of concurrent worker tasks",
+        "Handles task exceptions without crashing the worker loop",
+        "Implements clean graceful shutdown with asyncio.wait_for drain period",
+        "Tracks processed, failed, and in-flight task metrics"
+      ]
+    },
+    {
+      "id": "medium_010",
+      "prompt": "Implement a Markdown link and anchor validator that parses markdown documents, extracts all links/anchors, and flags broken internal anchor links (#heading-id).",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "parsers",
+      "description": "Markdown AST link and anchor verification engine",
+      "expected_behavior": "Parse headings into slugified anchor IDs, scan all markdown links, and verify that every internal link '#xyz' matches an existing heading anchor.",
+      "evaluation_criteria": [
+        "Parses markdown headings (H1-H6) into slugified IDs",
+        "Distinguishes internal anchors (#...), relative file links, and absolute URLs",
+        "Flags missing anchors with line numbers and file context",
+        "Handles nested inline code and formatting within headings"
+      ]
+    },
+    {
+      "id": "medium_011",
+      "prompt": "Implement a WebSocket connection manager WebSocketChannelManager with channel subscription, client disconnect cleanup, and broadcast heartbeat ping-pong.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "websockets",
+      "description": "WebSocket channel pub-sub manager",
+      "expected_behavior": "Manage active WebSocket connections mapped to channels, broadcast messages to channel subscribers, and clean up dead connections on ping failure.",
+      "evaluation_criteria": [
+        "Thread-safe / async-safe channel subscription mapping",
+        "Broadcasts messages concurrently without deadlocking on slow clients",
+        "Detects disconnected clients and removes them from all channel registries",
+        "Sends periodic heartbeat ping frames and disconnects timed-out sockets"
+      ]
+    },
+    {
+      "id": "medium_012",
+      "prompt": "Implement a streaming CSV validator that parses large CSV files in chunks of 1,000 rows, validates each row against a Pydantic schema, and writes errors to an error log.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "data_pipeline",
+      "description": "Memory-bounded streaming CSV schema validator",
+      "expected_behavior": "Stream CSV file line-by-line or in chunks, instantiate Pydantic model for validation, record row-number and validation error details, without loading entire file in memory.",
+      "evaluation_criteria": [
+        "Constant memory footprint regardless of file size",
+        "Maps validation errors to exact row numbers and column names",
+        "Outputs summary count of valid vs invalid rows",
+        "Handles malformed CSV lines (e.g. quote mismatch) gracefully"
+      ]
+    },
+    {
+      "id": "medium_013",
+      "prompt": "Implement a dynamic plugin discovery system PluginRegistry that scans a plugins/ directory, dynamically imports modules, and registers classes inheriting from BasePlugin.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "plugins",
+      "description": "Dynamic module and plugin loader",
+      "expected_behavior": "Use importlib to inspect Python files, find subclasses of BasePlugin, instantiate them with configuration, and maintain an active registry.",
+      "evaluation_criteria": [
+        "Safely imports modules without leaking globals or executing top-level hazards",
+        "Validates that discovered classes implement required abstract methods",
+        "Provides registration, retrieval, and unloading hooks",
+        "Handles import syntax errors in third-party plugins with clean logging"
+      ]
+    },
+    {
+      "id": "medium_014",
+      "prompt": "Implement a Prometheus metric exporter for an agentic harness collecting request_duration_seconds histogram and active_agent_runs gauge.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "telemetry",
+      "description": "Prometheus metrics instrumentation",
+      "expected_behavior": "Define Prometheus Histogram with appropriate latency buckets and Gauge for concurrency, exposing a scrape endpoint returning text/plain exposition format.",
+      "evaluation_criteria": [
+        "Follows Prometheus naming conventions and metric types",
+        "Instruments code via context manager or decorator",
+        "Generates Prometheus standard text format with # HELP and # TYPE",
+        "Thread-safe metric updates"
+      ]
+    },
+    {
+      "id": "medium_015",
+      "prompt": "Implement a three-state Circuit Breaker (CLOSED, OPEN, HALF_OPEN) with failure_threshold=5, recovery_timeout=30.0, and half_open_success_threshold=2.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "resilience",
+      "description": "Circuit breaker fault tolerance pattern",
+      "expected_behavior": "Wrap network calls. On 5 consecutive errors, trip circuit to OPEN and fast-fail subsequent calls. After timeout, transition to HALF_OPEN, requiring 2 successes to reset to CLOSED.",
+      "evaluation_criteria": [
+        "Accurately tracks consecutive failure count and transitions to OPEN",
+        "Fast-fails requests in OPEN state raising CircuitBreakerOpenException",
+        "Transitions to HALF_OPEN after recovery_timeout has elapsed",
+        "Resets to CLOSED after consecutive successes in HALF_OPEN"
+      ]
+    },
+    {
+      "id": "medium_016",
+      "prompt": "Implement a multi-tenant scoped cache key generator that combines tenant_id, environment, namespace, and SHA-256 hashed query parameters to prevent cache collisions.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "caching",
+      "description": "Multi-tenant cache key generator with collision isolation",
+      "expected_behavior": "Generate deterministic cache keys formatting tenant, env, namespace, and canonicalized sorted param hashes, ensuring zero key leakage across tenants.",
+      "evaluation_criteria": [
+        "Sorts query parameter keys to guarantee deterministic key hashing",
+        "Strictly isolates keys by tenant_id preventing cross-tenant data leaks",
+        "Normalizes whitespace and special characters",
+        "Caps key length within Redis 512-byte recommended boundaries"
+      ]
+    },
+    {
+      "id": "medium_017",
+      "prompt": "Write an OpenAPI 3.1 specification builder that inspects a list of route definitions and Pydantic schemas, generating a compliant OpenAPI JSON document.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "api_tooling",
+      "description": "OpenAPI 3.1 schema generator",
+      "expected_behavior": "Extract paths, HTTP methods, parameters, request body schemas, and response codes, serializing them into an OpenAPI 3.1 compatible JSON dictionary.",
+      "evaluation_criteria": [
+        "Complies with OpenAPI 3.1 JSON schema specification",
+        "Extracts Pydantic model schemas via model_json_schema()",
+        "Includes info, paths, and components/schemas sections",
+        "Handles query, path, and header parameter definitions"
+      ]
+    },
+    {
+      "id": "medium_018",
+      "prompt": "Implement an asynchronous CronScheduler that parses 5-field cron expressions ('* * * * *') and schedules recurring async job execution with cancellation.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "scheduling",
+      "description": "Async cron task scheduler",
+      "expected_behavior": "Evaluate 5-field cron syntax (minute, hour, dom, month, dow), calculate next execution time, sleep until target, and run async callback without drift.",
+      "evaluation_criteria": [
+        "Parses standard cron wildcard, range (1-5), and step (*/10) expressions",
+        "Calculates accurate next execution time using datetime",
+        "Supports job registration, manual triggering, and clean job cancellation",
+        "Prevents overlapping execution of slow jobs if configured"
+      ]
+    },
+    {
+      "id": "medium_019",
+      "prompt": "Implement a git unified diff patch applicator that parses diff hunks (@@ -start,len +start,len @@) and applies modifications to target file strings.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "patching",
+      "description": "Unified diff patch parser and applicator",
+      "expected_behavior": "Parse unified diff format (+/- lines, headers), verify context lines match target text, and apply insertions and deletions surgically.",
+      "evaluation_criteria": [
+        "Parses hunk headers and line markers (+, -, space)",
+        "Validates context lines and rejects patch if context does not match",
+        "Accurately computes target line offsets",
+        "Returns updated file content and list of applied hunk indices"
+      ]
+    },
+    {
+      "id": "medium_020",
+      "prompt": "Implement an abstract ObjectStorageClient interface and a LocalDiskStorageClient implementation with put_object, get_object, delete_object, and list_objects.",
+      "expected_tier": "super",
+      "difficulty": "moderate",
+      "category": "storage_abstraction",
+      "description": "Object storage abstraction with local filesystem adapter",
+      "expected_behavior": "Define ABC for cloud object storage (S3/GCS compatible). Implement local filesystem backend storing objects under root_dir with metadata sidecars.",
+      "evaluation_criteria": [
+        "Clean abstract base class using abc.ABC and @abstractmethod",
+        "LocalDiskStorageClient prevents path traversal outside root_dir",
+        "Supports byte streaming for large object reads and writes",
+        "Stores and retrieves object metadata (content-type, size, created_at)"
+      ]
     },
     {
       "id": "hard_001",
       "prompt": "Architect and implement a two-phase commit distributed transaction coordinator with WAL persistence, lease recovery, and Byzantine fault detection across replicated worker nodes.",
       "expected_tier": "ultra",
       "difficulty": "complex",
-      "category": "architecture",
-      "description": "Deep frontier reasoning across distributed systems theory"
+      "category": "distributed_transactions",
+      "description": "Frontier distributed systems coordinator with crash recovery",
+      "expected_behavior": "Coordinate distributed transactions across multiple participant nodes. Phase 1 (Prepare): collect votes, write PREPARE to Write-Ahead Log. Phase 2 (Commit/Abort): commit if all vote yes, abort if any vote no or timeout. Recover pending transactions from WAL on coordinator crash.",
+      "evaluation_criteria": [
+        "Formulates full 2PC state machine (Preparing, Committed, Aborting, Done)",
+        "Write-Ahead Log persistence with fsync to survive crash-restart cycles",
+        "Timeout and participant crash recovery protocol with lease renewals",
+        "Detects conflicting participant votes and guarantees atomic consistency"
+      ]
     },
     {
       "id": "hard_002",
-      "prompt": "Redesign entire database persistence layer to support dual-write sharding across PostgreSQL and ClickHouse with zero downtime migration.",
+      "prompt": "Redesign entire database persistence layer to support dual-write sharding across PostgreSQL and ClickHouse with zero downtime migration, reconciliation, and backfill.",
       "expected_tier": "ultra",
       "difficulty": "complex",
-      "category": "distributed_persistence",
-      "description": "High-complexity ungrounded architectural design"
+      "category": "database_architecture",
+      "description": "Dual-write sharded persistence architecture",
+      "expected_behavior": "Design an abstraction layer dual-writing transactions to OLTP (Postgres) and OLAP (ClickHouse), with an outbox pattern, change-data-capture (CDC) reconciliation, and idempotent replay.",
+      "evaluation_criteria": [
+        "Transactional outbox pattern preventing dual-write split-brain inconsistency",
+        "Idempotent message consumption and deduplication via transaction IDs",
+        "Reconciliation engine detecting and fixing drift between PostgreSQL and ClickHouse",
+        "Zero-downtime shadow read/write phase switching architecture"
+      ]
+    },
+    {
+      "id": "hard_003",
+      "prompt": "Implement the core Raft consensus algorithm state machine: Leader Election (randomized election timers, RequestVote RPCs), Log Replication (AppendEntries RPCs), and State Machine Commit.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "consensus_protocols",
+      "description": "Raft distributed consensus protocol implementation",
+      "expected_behavior": "Implement three Raft roles (Follower, Candidate, Leader), term numbering, vote persistence, heartbeat dissemination, log matching invariant, and majority quorum commit indexing.",
+      "evaluation_criteria": [
+        "Implements randomized election timeout preventing split votes",
+        "Handles RequestVote RPCs enforcing 'up-to-date log' rule",
+        "Handles AppendEntries RPCs enforcing log consistency and rollback of uncommitted terms",
+        "Maintains commitIndex and applies entries to state machine upon majority quorum"
+      ]
+    },
+    {
+      "id": "hard_004",
+      "prompt": "Implement a distributed lock manager using fencing tokens, Lamport logical clocks, and lease auto-renewal to safely guard external resources against split-brain writes.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "distributed_locking",
+      "description": "Distributed lock manager with monotonic fencing tokens",
+      "expected_behavior": "Provide acquire_lock(resource_id, ttl) returning a strictly monotonic fencing token. Provide background lease heartbeats. Guard storage writes by rejecting any write with an older fencing token.",
+      "evaluation_criteria": [
+        "Generates strictly monotonically increasing fencing tokens (counter + node_id)",
+        "Guards storage backends: rejects writes if incoming token < current high watermark",
+        "Implements safe lock renewal and heartbeat timeout expiration",
+        "Handles clock skew and network delays without race conditions"
+      ]
+    },
+    {
+      "id": "hard_005",
+      "prompt": "Implement a high-concurrency lock-free single-producer multi-consumer (SPMC) ring buffer in Python using atomic memory counters and memory barrier principles.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "lock_free_concurrency",
+      "description": "Lock-free single-producer multi-consumer circular queue",
+      "expected_behavior": "Circular fixed-size buffer using atomic head and tail pointers. Producer writes to tail and publishes with memory fence; multiple consumers compete for head via compare-and-swap or atomic increment.",
+      "evaluation_criteria": [
+        "Lock-free concurrency without mutex deadlocks",
+        "Correctly wraps around power-of-two buffer capacity using bitwise masking",
+        "Distinguishes buffer full vs buffer empty states without losing elements",
+        "Handles concurrent consumer contention with atomic head advancement"
+      ]
+    },
+    {
+      "id": "hard_006",
+      "prompt": "Implement a multi-region Event Sourcing and CQRS architecture with optimistic concurrency control, vector clocks for causal ordering, and snapshotting.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "event_sourcing_cqrs",
+      "description": "Distributed CQRS and Event Sourcing engine",
+      "expected_behavior": "Append domain events to an immutable event store with version check. Rebuild aggregate state by replaying events from last snapshot. Track cross-region causality via vector clocks.",
+      "evaluation_criteria": [
+        "Optimistic concurrency control: rejects append if aggregate version != expected version",
+        "Vector clock causal order resolution for events arriving out-of-order",
+        "Periodic snapshotting to bound aggregate rehydration time",
+        "Decoupled asynchronous read model projectors updating query views"
+      ]
+    },
+    {
+      "id": "hard_007",
+      "prompt": "Implement an AST compiler pass that parses a subset of Python expressions (arithmetic, variables, if-else) and translates them into an intermediate representation (SSA 3-address code).",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "compiler_design",
+      "description": "Static Single Assignment (SSA) 3-address code compiler pass",
+      "expected_behavior": "Walk Python ast.AST nodes, construct Control Flow Graph (CFG) with basic blocks, generate 3-address code instructions (t1 = a + b), and place phi functions at join points.",
+      "evaluation_criteria": [
+        "Traverses Python AST generating valid 3-address instructions",
+        "Constructs basic blocks with explicit branch/jump terminators",
+        "Enforces Static Single Assignment: each variable is assigned exactly once",
+        "Handles conditional if/else control flow with correct phi placement"
+      ]
+    },
+    {
+      "id": "hard_008",
+      "prompt": "Implement a Zero-Knowledge polynomial commitment verification engine for identity claims using KZG commitments and elliptic curve pairing abstractions.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "zero_knowledge_crypto",
+      "description": "KZG polynomial commitment verifier",
+      "expected_behavior": "Represent secret claims as polynomials, generate KZG commitment at setup point s, create evaluation proof at point z, and verify pairing equality e(C - y*G1, G2) == e(proof, s*G2 - z*G2).",
+      "evaluation_criteria": [
+        "Correct polynomial evaluation and quotient polynomial computation",
+        "Implements pairing check verification equation accurately",
+        "Rejects tampered evaluations or proofs with false claims",
+        "Constant-time verification complexity independent of polynomial degree"
+      ]
+    },
+    {
+      "id": "hard_009",
+      "prompt": "Implement a multi-tenant vector similarity search index with Hierarchical Navigable Small World (HNSW) graphs, dynamic metadata filtering, and scalar quantization.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "vector_indexing",
+      "description": "HNSW vector search index with dynamic filtering",
+      "expected_behavior": "Construct multi-layer proximity graphs. Search layers greedily from top to bottom, perform beam search on bottom layer with cosine distance, filtering nodes by tenant_id.",
+      "evaluation_criteria": [
+        "Implements multi-layer HNSW graph construction with entry point descent",
+        "Greedy routing across graph levels and heuristic neighbor selection",
+        "Dynamically filters search candidates by metadata attributes (e.g. tenant_id)",
+        "Applies scalar quantization (FP32 -> INT8) to compress vector memory footprint"
+      ]
+    },
+    {
+      "id": "hard_010",
+      "prompt": "Implement a real-time WebRTC Selective Forwarding Unit (SFU) packet router with RTP packet parsing, adaptive jitter buffer, and packet loss concealment.",
+      "expected_tier": "ultra",
+      "difficulty": "complex",
+      "category": "streaming_media",
+      "description": "WebRTC SFU media router and jitter buffer",
+      "expected_behavior": "Parse RTP packet headers (sequence number, timestamp, SSRC), buffer out-of-order packets in an adaptive jitter buffer, and route media packets to subscribing peers.",
+      "evaluation_criteria": [
+        "Parses RTP packet headers (RFC 3550) and handles sequence number rollover",
+        "Adaptive jitter buffer re-orders disordered packets before playout",
+        "Detects packet loss and synthesizes concealment frames or triggers NACK",
+        "Fan-out router forwards incoming RTP streams to multiple subscribers with minimal latency"
+      ]
     }
   ]
 }
