@@ -49,6 +49,11 @@ def main():
         default="data/results",
         help="Output directory for reports (default: data/results)",
     )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Run benchmarks in deterministic mock mode without API costs",
+    )
     args = parser.parse_args()
 
     mode = ExecutionMode.REMOTE_CLOUD if args.mode == "remote" else ExecutionMode.LOCAL
@@ -58,6 +63,7 @@ def main():
     print(f"=======================================================")
     print(f"Dataset:    {args.tasks}")
     print(f"Mode:       {mode.value.upper()}")
+    print(f"Mock Mode:  {args.mock}")
     print(f"Output Dir: {args.output_dir}\n")
 
     report = run_benchmark_suite(
@@ -65,6 +71,7 @@ def main():
         mode=mode,
         max_tasks=args.max_tasks,
         output_dir=args.output_dir,
+        mock_override=args.mock,
     )
 
     print("\n=======================================================")

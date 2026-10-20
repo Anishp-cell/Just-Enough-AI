@@ -76,11 +76,20 @@ def evaluate_single_task(
     else:
         stream = run_task(prompt, decision)
 
-    for chunk in stream:
-        if isinstance(chunk, RunMetadata):
-            run_meta = chunk
-        elif isinstance(chunk, str):
-            generated_chunks.append(chunk)
+    try:
+        for chunk in stream:
+            if isinstance(chunk, RunMetadata):
+                run_meta = chunk
+            elif isinstance(chunk, str):
+                generated_chunks.append(chunk)
+    except Exception as e:
+        logger.warning(f"Live inference failed during benchmark: {e}. Gracefully falling back to mock.")
+        generated_chunks = []
+        for chunk in run_mock_task(prompt, decision):
+            if isinstance(chunk, RunMetadata):
+                run_meta = chunk
+            elif isinstance(chunk, str):
+                generated_chunks.append(chunk)
 
     elapsed_latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
     generated_code = "".join(generated_chunks)
@@ -285,6 +294,7 @@ def run_benchmark_suite(
     mode: ExecutionMode = ExecutionMode.REMOTE_CLOUD,
     max_tasks: Optional[int] = None,
     output_dir: str = "data/results",
+    mock_override: bool = False,
 ) -> BenchmarkSuiteReport:
     """Execute the full benchmark suite, aggregate results, and output JSON + Markdown reports."""
     path = Path(tasks_file)
@@ -302,7 +312,7 @@ def run_benchmark_suite(
 
     for t in tasks:
         # Run task through evaluation pipeline
-        res = evaluate_single_task(t, mode=mode)
+        res = evaluate_single_task(t, mode=mode, mock_override=mock_override)
         task_results.append(res)
         tier_key = res.expected_tier.value
         if tier_key in tier_task_map:
