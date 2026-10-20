@@ -14,7 +14,7 @@
 | **Lead (You)** | The Brain & Systems Architect | 16 / 16 | 0 | 0 | **100%** | 🟢 Complete (Phase 1 core & Phase 2 Universal Provider Engine L-1 to L-16 verified ✅) |
 | **Mayank** | The Sentinel (Cybersecurity Lead) | 7 / 7 | 0 | 0 | **100%** | 🟢 Complete (M-1 to M-7 implemented & verified with 35 passing tests) |
 | **Manjiri** | The Interface & Client Integration | 8 / 8 | 0 | 0 | **100%** | 🟢 Complete (UI-1 to UI-8 implemented, verified with 91 passing tests ✅) |
-| **Data Lead** | The Evaluator (Benchmarks & Evals) | 1 / 5 | 0 | 4 | **20%** | 🟡 Ready to execute (`D-2` to `D-5` including multi-provider benchmarks) |
+| **Data Lead** | The Evaluator (Benchmarks & Evals) | 5 / 5 | 0 | 0 | **100%** | 🟢 Complete (D-1 to D-5 benchmark suite, edge cases & reports verified with 99 tests ✅) |
 
 ---
 
@@ -469,7 +469,7 @@ sequenceDiagram
 #### Task `D-1`: Benchmark Task Dataset V1 (Scaffold) [DONE]
 * **What was built:** Scaffolded `data/benchmarks/tasks_v1.json` with 7 starter tasks across easy, medium, and hard tiers.
 
-#### Task `D-2`: Expand Benchmark Suite to 50 Real-World Tasks (`data/benchmarks/tasks_v1.json`)
+#### Task `D-2`: Expand Benchmark Suite to 50 Real-World Tasks (`data/benchmarks/tasks_v1.json`) [DONE]
 * **Goal:** Curate a rigorous 50-task benchmark corpus representing diverse real-world software engineering workflows to evaluate routing precision.
 * **Schema Contract:**
   ```json
@@ -490,7 +490,7 @@ sequenceDiagram
   - **10 Complex Tasks (`expected_tier: "ultra"`):**
     - Distributed transaction coordinators, multi-region database replication protocols, custom cryptographic token signers, high-concurrency lock-free queues.
 
-#### Task `D-3`: Curate 15 Boundary Edge-Cases for Fuzzing (`data/edge_cases/`)
+#### Task `D-3`: Curate 15 Boundary Edge-Cases for Fuzzing (`data/edge_cases/`) [DONE]
 * **Goal:** Provide Mayank's fuzzer with realistic Python code snippets that have subtle hidden defects to prove our verification layer works.
 * **Directory Structure:** Create `data/edge_cases/` with individual Python files:
   - `case_01_off_by_one.py` (loop index out of range on empty list)
@@ -499,7 +499,7 @@ sequenceDiagram
   - `case_04_int_overflow.py` (unbounded recursion or huge exponents)
   - `case_05_unhandled_unicode.py` (crashes on emojis or null bytes `\x00`)
 
-#### Task `D-4`: Benchmark Report & Cost Comparison Tables (`data/results/benchmark_report.md`)
+#### Task `D-4`: Benchmark Report & Cost Comparison Tables (`data/results/benchmark_report.md`) [DONE]
 * **Goal:** Run all 50 tasks through the router and agent loop, measure actual token spend, and produce publication-ready comparison tables for the hackathon README.
 * **Evaluation Metrics to Capture:**
   - **Routing Accuracy:** % of tasks correctly routed to their target tier.
@@ -511,7 +511,7 @@ sequenceDiagram
     | **Pure Nemotron Ultra (253B)** | $1.80 | $0.360 | 71.2% |
     | **Just-Enough-AI (Dynamic Tiers)** | **$0.28 (blended)** | **$0.056** | **95.5% Savings** |
 
-#### Task `D-5`: Multi-Provider Latency & Failover Resilience Benchmark (`data/results/provider_benchmark.md`)
+#### Task `D-5`: Multi-Provider Latency & Failover Resilience Benchmark (`data/results/provider_benchmark.md`) [DONE]
 * **Goal:** Empirically compare execution latency and resilience across Direct API vs local Ollama vs CLI subprocesses (Antigravity, Claude Code), demonstrating that zero-cost cascading failover works without dropping tasks.
 * **Evaluation Scenarios:**
   1. **Latency Overhead by Provider:**
