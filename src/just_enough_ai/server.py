@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, Response
 from pydantic import BaseModel
 
 from .models import ExecutionMode, RunMetadata, ModelTier
@@ -225,8 +225,8 @@ def api_pwa_manifest():
         "description": "Hardware-headroom and memory-aware agentic coding harness",
         "start_url": "/",
         "display": "standalone",
-        "background_color": "#070b13",
-        "theme_color": "#10b981",
+        "background_color": "#09090b",
+        "theme_color": "#ffffff",
         "icons": [
             {
                 "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
@@ -237,6 +237,13 @@ def api_pwa_manifest():
     }
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Returns SVG favicon to eliminate 404 in browser requests."""
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>'
+    return Response(content=svg, media_type="image/svg+xml")
+
+
 @app.get("/")
 def serve_cockpit():
     html = r"""<!DOCTYPE html>
@@ -244,41 +251,40 @@ def serve_cockpit():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#070b13">
+  <meta name="theme-color" content="#09090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link rel="manifest" href="/manifest.json">
   <title>⚡ Just-Enough-AI Cockpit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #070b13;
-      --surface: #0e1526;
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-accent: rgba(16, 185, 129, 0.3);
-      --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.25);
-      --nano: #10b981;
-      --super: #06b6d4;
-      --ultra: #8b5cf6;
+      --bg: #09090b;
+      --surface: #141417;
+      --card-bg: #18181b;
+      --border: #27272a;
+      --border-accent: #3f3f46;
+      --accent: #ffffff;
+      --accent-muted: #a1a1aa;
+      --nano: #e4e4e7;
+      --super: #f4f4f5;
+      --ultra: #09090b;
       --amber: #f59e0b;
       --red: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --code-bg: #090e1a;
-      --diff-add-bg: rgba(16, 185, 129, 0.15);
-      --diff-add-border: #10b981;
-      --diff-del-bg: rgba(239, 68, 68, 0.15);
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --code-bg: #09090b;
+      --diff-add-bg: #112419;
+      --diff-add-border: #22c55e;
+      --diff-del-bg: #261517;
       --diff-del-border: #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       background: var(--bg);
-      background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
       color: var(--text);
       min-height: 100vh;
       padding: 1rem;
@@ -292,8 +298,7 @@ def serve_cockpit():
       position: sticky;
       top: 0;
       z-index: 100;
-      backdrop-filter: blur(16px);
-      background: rgba(7, 11, 19, 0.85);
+      background: var(--bg);
       border-bottom: 1px solid var(--border);
       padding: 0.85rem 0;
       margin-bottom: 1rem;
@@ -310,21 +315,21 @@ def serve_cockpit():
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      font-size: 1.35rem;
-      font-weight: 800;
+      font-size: 1.25rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
+      color: #ffffff;
     }
     .brand span.logo-accent {
-      background: linear-gradient(135deg, #10b981, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #ffffff;
+      font-weight: 800;
     }
     .badge-live {
-      background: rgba(16, 185, 129, 0.12);
-      color: var(--accent);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: #18181b;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
       padding: 0.2rem 0.55rem;
-      border-radius: 999px;
+      border-radius: 4px;
       font-size: 0.7rem;
       font-weight: 700;
       letter-spacing: 0.04em;
@@ -336,10 +341,10 @@ def serve_cockpit():
       gap: 0.5rem;
     }
     .chip {
-      background: rgba(255, 255, 255, 0.04);
+      background: #141417;
       border: 1px solid var(--border);
       padding: 0.25rem 0.6rem;
-      border-radius: 6px;
+      border-radius: 4px;
       font-size: 0.72rem;
       color: var(--text-muted);
       font-family: 'JetBrains Mono', monospace;
@@ -358,43 +363,42 @@ def serve_cockpit():
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      background: rgba(15, 23, 42, 0.7);
+      background: #141417;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 0.22rem 0.65rem;
+      border-radius: 4px;
+      padding: 0.25rem 0.65rem;
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--text-muted);
       white-space: nowrap;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
     .provider-pill.active {
-      border-color: var(--accent);
-      color: var(--text);
-      background: rgba(16, 185, 129, 0.12);
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+      border-color: #52525b;
+      color: #ffffff;
+      background: #27272a;
     }
     .dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #64748b;
+      background: #52525b;
     }
-    .dot.green { background: #10b981; box-shadow: 0 0 6px #10b981; }
-    .dot.blue { background: #06b6d4; box-shadow: 0 0 6px #06b6d4; }
-    .dot.amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .dot.green { background: #22c55e; }
+    .dot.blue { background: #3b82f6; }
+    .dot.amber { background: #f59e0b; }
 
     /* Cascade Alert Toast */
     .toast-alert {
       display: none;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fde68a;
-      border-radius: 8px;
+      background: #1c1813;
+      border: 1px solid #784a14;
+      color: #fed7aa;
+      border-radius: 6px;
       padding: 0.6rem 0.85rem;
       font-size: 0.8rem;
       margin-bottom: 0.85rem;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.2s ease;
     }
     .toast-alert.visible { display: flex; align-items: center; gap: 0.5rem; }
 
@@ -419,19 +423,18 @@ def serve_cockpit():
     }
     select, textarea {
       width: 100%;
-      background: var(--card-bg);
+      background: #141417;
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 0.65rem 0.8rem;
       font-family: inherit;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.15s;
     }
     select:focus, textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+      border-color: #71717a;
     }
 
     /* UI-2: Quick Action Prompt Chips */
@@ -444,9 +447,9 @@ def serve_cockpit():
     }
     .prompt-chips-row::-webkit-scrollbar { display: none; }
     .action-chip {
-      background: rgba(255, 255, 255, 0.04);
+      background: #141417;
       border: 1px solid var(--border);
-      border-radius: 999px;
+      border-radius: 4px;
       padding: 0.28rem 0.65rem;
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -456,9 +459,9 @@ def serve_cockpit():
       user-select: none;
     }
     .action-chip:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: #27272a;
+      color: #ffffff;
+      border-color: #3f3f46;
     }
 
     textarea {
@@ -477,42 +480,42 @@ def serve_cockpit():
     }
     button.btn-primary {
       flex: 2;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #022c1b;
-      font-weight: 800;
-      border: none;
-      border-radius: 8px;
+      background: #ffffff;
+      color: #09090b;
+      font-weight: 700;
+      border: 1px solid #ffffff;
+      border-radius: 6px;
       padding: 0.75rem 1rem;
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
-      box-shadow: 0 4px 14px var(--accent-glow);
+      font-size: 0.9rem;
+      transition: background 0.15s, border-color 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
     }
     button.btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      background: #e4e4e7;
+      border-color: #e4e4e7;
     }
     button.btn-secondary {
       flex: 1;
-      background: rgba(255, 255, 255, 0.05);
+      background: #18181b;
       border: 1px solid var(--border);
       color: var(--text);
       font-weight: 600;
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 0.75rem;
       cursor: pointer;
       font-size: 0.85rem;
-      transition: background 0.2s;
+      transition: background 0.15s, border-color 0.15s;
     }
     button.btn-secondary:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.09);
+      background: #27272a;
+      border-color: #3f3f46;
     }
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
     }
 
@@ -520,13 +523,12 @@ def serve_cockpit():
     .telemetry-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 0.9rem 1.1rem;
       margin-bottom: 1rem;
       display: none;
-      backdrop-filter: blur(12px);
     }
-    .telemetry-card.visible { display: block; animation: fadeIn 0.25s ease; }
+    .telemetry-card.visible { display: block; animation: fadeIn 0.2s ease; }
     .tel-header {
       display: flex;
       align-items: center;
@@ -536,22 +538,23 @@ def serve_cockpit():
       border-bottom: 1px solid var(--border);
     }
     .model-badge {
-      font-weight: 800;
-      font-size: 0.85rem;
-      padding: 0.22rem 0.65rem;
-      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.22rem 0.6rem;
+      border-radius: 4px;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .model-badge.nano { background: rgba(16, 185, 129, 0.15); color: var(--nano); border: 1px solid rgba(16, 185, 129, 0.35); }
-    .model-badge.super { background: rgba(6, 182, 212, 0.15); color: var(--super); border: 1px solid rgba(6, 182, 212, 0.35); }
-    .model-badge.ultra { background: rgba(139, 92, 246, 0.15); color: var(--ultra); border: 1px solid rgba(139, 92, 246, 0.35); }
+    .model-badge.nano { background: #1c1c20; color: #f4f4f5; border: 1px solid #3f3f46; }
+    .model-badge.super { background: #242429; color: #ffffff; border: 1px solid #52525b; }
+    .model-badge.ultra { background: #ffffff; color: #09090b; border: 1px solid #ffffff; }
 
     .savings-ticker {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 700;
-      color: var(--accent);
+      color: #f4f4f5;
       font-family: 'JetBrains Mono', monospace;
     }
     .tel-grid {
@@ -588,16 +591,16 @@ def serve_cockpit():
     .score-bar-bg {
       flex: 1;
       height: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 999px;
+      background: #27272a;
+      border-radius: 2px;
       margin: 0 0.6rem;
       overflow: hidden;
     }
     .score-bar-fill {
       height: 100%;
-      border-radius: 999px;
-      background: var(--accent);
-      transition: width 0.4s ease;
+      border-radius: 2px;
+      background: #e4e4e7;
+      transition: width 0.3s ease;
     }
 
     /* Tabs & Output Pane */
@@ -611,22 +614,22 @@ def serve_cockpit():
       border: 1px solid transparent;
       color: var(--text-muted);
       padding: 0.35rem 0.75rem;
-      border-radius: 6px;
+      border-radius: 4px;
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
     .tab-btn.active {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: var(--border);
-      color: var(--text);
+      background: #27272a;
+      border-color: #3f3f46;
+      color: #ffffff;
     }
 
     #terminalPane {
       background: var(--code-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 1rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
@@ -636,7 +639,7 @@ def serve_cockpit():
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-word;
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+      color: #e4e4e7;
     }
 
     /* UI-5: Visual Diff Viewer */
@@ -644,7 +647,7 @@ def serve_cockpit():
       display: none;
       background: var(--code-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 0.6rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.82rem;
@@ -653,21 +656,21 @@ def serve_cockpit():
     }
     .diff-line {
       padding: 0.15rem 0.4rem;
-      border-radius: 3px;
+      border-radius: 2px;
       white-space: pre-wrap;
     }
     .diff-add {
       background: var(--diff-add-bg);
-      color: #34d399;
-      border-left: 3px solid var(--diff-add-border);
+      color: #4ade80;
+      border-left: 2px solid var(--diff-add-border);
     }
     .diff-del {
       background: var(--diff-del-bg);
       color: #f87171;
-      border-left: 3px solid var(--diff-del-border);
+      border-left: 2px solid var(--diff-del-border);
     }
     .diff-context {
-      color: #94a3b8;
+      color: #a1a1aa;
     }
 
     /* UI-4: Collapsible Mobile File Tree */
@@ -675,7 +678,7 @@ def serve_cockpit():
       display: none;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 0.85rem;
       margin-bottom: 1rem;
       max-height: 300px;
@@ -692,10 +695,10 @@ def serve_cockpit():
     }
     .file-tree-search {
       width: 100%;
-      background: rgba(0, 0, 0, 0.25);
+      background: #141417;
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: 6px;
+      border-radius: 4px;
       padding: 0.4rem 0.6rem;
       font-size: 0.8rem;
       margin-bottom: 0.5rem;
@@ -713,8 +716,8 @@ def serve_cockpit():
       transition: background 0.15s;
     }
     .file-item:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
+      background: #27272a;
+      color: #ffffff;
     }
 
     /* File Preview Modal */
@@ -722,8 +725,7 @@ def serve_cockpit():
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 200;
       align-items: center;
       justify-content: center;
@@ -733,14 +735,13 @@ def serve_cockpit():
     .modal-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 8px;
       width: 100%;
       max-width: 650px;
       max-height: 85vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
     }
     .modal-header {
       display: flex;
@@ -758,7 +759,7 @@ def serve_cockpit():
       white-space: pre-wrap;
       line-height: 1.5;
       background: var(--code-bg);
-      color: #cbd5e1;
+      color: #e4e4e7;
     }
     .modal-footer {
       display: flex;
@@ -779,7 +780,7 @@ def serve_cockpit():
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
+      from { opacity: 0; transform: translateY(-3px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
@@ -794,7 +795,7 @@ def serve_cockpit():
       </div>
       <div class="header-chips">
         <div id="hwChip" class="chip">Scanning HW...</div>
-        <div id="statusBadge" class="badge-live" style="background:rgba(255,255,255,0.06); color:var(--text-muted); border-color:var(--border);">Ready</div>
+        <div id="statusBadge" class="badge-live" style="background:#18181b; color:var(--text-muted); border-color:var(--border);">Ready</div>
       </div>
     </div>
 
@@ -1191,9 +1192,9 @@ def serve_cockpit():
       }
       loopEventsBuffer.forEach(evt => {
         const div = document.createElement('div');
-        div.style.cssText = 'padding:0.4rem 0.6rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem;';
-        const color = evt.event_type === 'KV_BUDGET' ? '#06b6d4' : evt.event_type === 'SPECULATION' ? '#f59e0b' : '#10b981';
-        div.innerHTML = `<span style="color:${color}; font-weight:700;">[Step ${evt.step} - ${evt.event_type}]</span> <span style="color:#e2e8f0;">${evt.message}</span>`;
+        div.style.cssText = 'padding:0.4rem 0.6rem; border-bottom:1px solid #27272a; font-size:0.8rem;';
+        const color = evt.event_type === 'KV_BUDGET' ? '#a1a1aa' : evt.event_type === 'SPECULATION' ? '#e4e4e7' : '#ffffff';
+        div.innerHTML = `<span style="color:${color}; font-weight:700;">[Step ${evt.step} - ${evt.event_type}]</span> <span style="color:#e4e4e7;">${evt.message}</span>`;
         box.appendChild(div);
       });
     }
@@ -1224,7 +1225,7 @@ def serve_cockpit():
       rawOutputBuffer = '';
       loopEventsBuffer = [];
       statusBadge.textContent = 'Connecting...';
-      statusBadge.style.color = '#38bdf8';
+      statusBadge.style.color = '#a1a1aa';
       telemetry.classList.add('visible');
       commitBtn.style.display = 'none';
 
@@ -1262,7 +1263,7 @@ def serve_cockpit():
 
             if (payload === '[DONE]') {
               statusBadge.textContent = 'Completed ✓';
-              statusBadge.style.color = '#10b981';
+              statusBadge.style.color = '#ffffff';
               commitBtn.style.display = 'inline-flex';
             } else if (payload.startsWith('[ROUTING]')) {
               try {
